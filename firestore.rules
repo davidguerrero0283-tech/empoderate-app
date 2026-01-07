@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+    
+    // ============================================
+    // Users Collection
+    // ============================================
+    match /users/{userId} {
+      // Users can read and write their own data
+      allow read, write: if isOwner(userId);
+      // Admins can read all users
+      allow read: if isAdmin();
+    }
+    
+    // ============================================
+    // Subscriptions Collection
+    // ============================================
+    match /subscriptions/{userId} {
+      // Users can read their own subscription
+      allow read: if isOwner(userId);
+      // Only Cloud Functions can write
+      allow write: if false;
+      // Admins can read all
+      allow read: if isAdmin();
+    }
+    
+    // ============================================
+    // Payments Collection
+    // ============================================
+    match /payments/{paymentId} {
+      // Users can read their own payments
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid;
+      // Only Cloud Functions can write
+      allow write: if false;
+      // Admins can read all
+      allow read: if isAdmin();
+    }
+    
+    // ============================================
+    // AI Usage Collection
+    // ============================================
+    match /ai_usage/{userId} {
+      // Users can read their own usage
+      allow read: if isOwner(userId);
+      // Only Cloud Functions can write
+      allow write: if false;
+      
+      // Daily subcollection
+      match /daily/{date} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+    
+    // ============================================
+    // Audit Logs Collection (Admin only)
+    // ============================================
+    match /audit_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ============================================
+    // Blog Articles (Public Read)
+    // ============================================
+    match /blog_articles/{articleId} {
+      // Everyone can read published articles
+      allow read: if resource.data.status == 'published';
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+    
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

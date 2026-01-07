@@ -1,0 +1,657 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:ui'; // For BackdropFilter
+import '../../../../src/navigation/app_routes.dart';
+import '../../../../src/components/neon_widgets.dart'; // Using global neon constants
+import '../../../../src/components/visibility_builder.dart';
+
+class PremiumDrawer extends StatefulWidget {
+  const PremiumDrawer({Key? key}) : super(key: key);
+
+  @override
+  State<PremiumDrawer> createState() => _PremiumDrawerState();
+}
+
+class _PremiumDrawerState extends State<PremiumDrawer> {
+  final ScrollController _scrollController = ScrollController();
+  double _headerFooterOpacity = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Gradual fade: starts fading at 0px, fully hidden at 150px
+    const double fadeStart = 0.0;
+    const double fadeEnd = 150.0;
+    
+    final offset = _scrollController.offset;
+    final newOpacity = offset <= fadeStart
+        ? 1.0
+        : offset >= fadeEnd
+            ? 0.0
+            : 1.0 - ((offset - fadeStart) / (fadeEnd - fadeStart));
+    
+    // Only update if the change is significant (avoid flickering from tiny changes)
+    if ((newOpacity - _headerFooterOpacity).abs() > 0.01) {
+      setState(() {
+        _headerFooterOpacity = newOpacity;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. WIDTH & STRUCTURE
+    return SizedBox(
+      width: 300, // Fixed width as requested
+      child: Drawer(
+        elevation: 0, // Disable default shadow to use our own glass styling
+        backgroundColor: Colors.transparent, // Background handled by container
+        child: ClipRRect(
+          // No border radius needed for the side touching the edge, but maybe right side?
+          // Standard drawers are usually rectangular.
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Heavy blur for premium glass feel
+            child: Container(
+              decoration: BoxDecoration(
+                // 2. VISUAL STYLE: Dark Glass + Gradient
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF030303), // Soft Black
+                    Color(0xFF050914), // Deep Navy (very dark)
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                border: Border(
+                  right: BorderSide(
+                    color: Colors.white.withOpacity(0.05),
+                    width: 1,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 30,
+                    offset: const Offset(10, 0),
+                  )
+                ],
+              ),
+              child: Column(
+                children: [
+                  // MENU ITEMS (Scrollable with Header and Footer)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // USER HEADER (Inside Scroll)
+                          _buildHeader(context),
+                          
+                          // SEPARATOR
+                          Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+                          
+                          // Menu Items with padding
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // SECTION 1: INICIO
+                                _buildSectionLabel('INICIO'),
+                                _buildMenuItem(
+                                  context, 
+                                  icon: Icons.home_outlined, 
+                                  title: 'Inicio', 
+                                  route: AppRoutes.root,
+                                  color: kNeonBlue
+                                ),
+                                VisibilityBuilder(
+                                  id: 'home.ruta_exito',
+                                  child: _buildMenuItem(
+                                    context, 
+                                    icon: Icons.flag_outlined,
+                                    title: 'La Ruta al Éxito', 
+                                    route: AppRoutes.laRutaAlExito,
+                                    color: kNeonPurple
+                                  ),
+                                ),
+                                VisibilityBuilder(
+                                  id: 'home.my_business',
+                                  child: _buildMenuItem(
+                                    context, 
+                                    icon: Icons.business_outlined,
+                                    title: 'Mi Negocio', 
+                                    route: AppRoutes.miNegocioRubro,
+                                    color: kNeonCyan
+                                  ),
+                                ),
+                                _buildMenuItem(
+                                  context, 
+                                  icon: Icons.dashboard_outlined,
+                                  title: 'Dashboard de Negocio', 
+                                  route: AppRoutes.dashboardNegocio,
+                                  color: kNeonViolet
+                                ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 2: HERRAMIENTAS
+                          _buildSectionLabel('HERRAMIENTAS'),
+                          VisibilityBuilder(
+                            id: 'tools.general',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.grid_view, 
+                              title: 'Herramientas', 
+                              route: AppRoutes.tools,
+                              color: kNeonCyan
+                            ),
+                          ),
+                          VisibilityBuilder(
+                            id: 'tools.calculators',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.calculate_outlined,
+                              title: 'Calculadoras', 
+                              route: AppRoutes.calculadoras,
+                              color: kNeonGreen
+                            ),
+                          ),
+                          VisibilityBuilder(
+                            id: 'tools.audit',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.assessment_outlined,
+                              title: 'Auditoría de Negocio', 
+                              route: AppRoutes.auditoria,
+                              color: Colors.orangeAccent
+                            ),
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.checklist_outlined,
+                            title: 'Checklist', 
+                            route: AppRoutes.checklist,
+                            color: Colors.purpleAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.security_outlined,
+                            title: 'Bóveda Digital', 
+                            route: AppRoutes.bovedaDigital,
+                            color: kNeonGold
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 3: RECURSOS HUMANOS
+                          _buildSectionLabel('RECURSOS HUMANOS'),
+                          VisibilityBuilder(
+                            id: 'home.hr',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.people_outline,
+                              title: 'RRHH Principal', 
+                              route: AppRoutes.humanResources,
+                              color: kNeonBlue
+                            ),
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.attach_money_outlined,
+                            title: 'Calculadora de Salario', 
+                            route: AppRoutes.salarioNeto,
+                            color: kNeonGreen
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.receipt_long_outlined,
+                            title: 'Liquidación', 
+                            route: AppRoutes.liquidacion,
+                            color: Colors.redAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.verified_user_outlined,
+                            title: 'Cumplimiento Laboral', 
+                            route: '/rrhh/cumplimiento',
+                            color: Colors.tealAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.description_outlined,
+                            title: 'Plantillas RRHH', 
+                            route: '/rrhh/plantillas',
+                            color: kNeonPurple
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 4: CONTABILIDAD
+                          _buildSectionLabel('CONTABILIDAD'),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.account_balance_outlined,
+                            title: 'Contabilidad Principal', 
+                            route: AppRoutes.accounting,
+                            color: kNeonGreen
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.school_outlined,
+                            title: 'Aula Contable', 
+                            route: AppRoutes.accountingClassroom,
+                            color: kNeonBlue
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.trending_up_outlined,
+                            title: 'Flujo de Caja', 
+                            route: AppRoutes.cashFlow,
+                            color: Colors.greenAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.pie_chart_outline,
+                            title: 'Presupuesto', 
+                            route: AppRoutes.budget,
+                            color: Colors.blueAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.request_quote_outlined,
+                            title: 'Estimador de Impuestos', 
+                            route: AppRoutes.taxEstimator,
+                            color: Colors.orangeAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.payments_outlined,
+                            title: 'Costos Fijos', 
+                            route: AppRoutes.fixedCosts,
+                            color: kNeonCyan
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 5: MARKETING
+                          _buildSectionLabel('MARKETING'),
+                          VisibilityBuilder(
+                            id: 'home.marketing',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.campaign_outlined,
+                              title: 'Marketing Principal', 
+                              route: AppRoutes.marketing,
+                              color: Colors.pinkAccent
+                            ),
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.article_outlined,
+                            title: 'Contenido', 
+                            route: AppRoutes.marketingContent,
+                            color: kNeonPurple
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.filter_alt_outlined,
+                            title: 'Embudo de Ventas', 
+                            route: AppRoutes.marketingFunnel,
+                            color: kNeonCyan
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.rocket_launch_outlined,
+                            title: 'Campañas', 
+                            route: AppRoutes.marketingCampaigns,
+                            color: Colors.deepOrangeAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.person_pin_outlined,
+                            title: 'Avatar de Cliente', 
+                            route: AppRoutes.marketingAvatar,
+                            color: kNeonBlue
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.auto_awesome_outlined,
+                            title: 'Automatización Redes Sociales', 
+                            route: AppRoutes.marketingAutomation,
+                            color: kNeonGold
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 6: APRENDIZAJE
+                          _buildSectionLabel('APRENDIZAJE'),
+                          VisibilityBuilder(
+                            id: 'tools.courses',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.school_outlined,
+                              title: 'Centro de Aprendizaje', 
+                              route: AppRoutes.learningCenter,
+                              color: kNeonBlue
+                            ),
+                          ),
+                          VisibilityBuilder(
+                            id: 'tools.library',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.folder_open_outlined, 
+                              title: 'Biblioteca', 
+                              route: AppRoutes.library,
+                              color: Colors.tealAccent
+                            ),
+                          ),
+                          VisibilityBuilder(
+                            id: 'home.blog',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.rss_feed_outlined,
+                              title: 'Blog', 
+                              route: AppRoutes.blog,
+                              color: kNeonPurple
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 7: INTELIGENCIA ARTIFICIAL
+                          _buildSectionLabel('INTELIGENCIA ARTIFICIAL'),
+                          VisibilityBuilder(
+                            id: 'tools.ai_chat',
+                            child: _buildMenuItem(
+                              context, 
+                              icon: Icons.psychology_outlined,
+                              title: 'Hub IA', 
+                              route: AppRoutes.aiHub,
+                              color: kNeonViolet
+                            ),
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.account_balance_wallet_outlined,
+                            title: 'IA Contable', 
+                            route: AppRoutes.iaContable,
+                            color: kNeonGreen
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.gavel_outlined,
+                            title: 'IA Legal', 
+                            route: AppRoutes.iaLegal,
+                            color: Colors.blueAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.trending_up_outlined,
+                            title: 'IA Marketing', 
+                            route: AppRoutes.iaMarketing,
+                            color: Colors.pinkAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.point_of_sale_outlined,
+                            title: 'IA Ventas', 
+                            route: AppRoutes.iaVentas,
+                            color: Colors.orangeAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.speed_outlined,
+                            title: 'IA Productividad', 
+                            route: AppRoutes.iaProductividad,
+                            color: kNeonCyan
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.menu_book_outlined,
+                            title: 'IA Docente', 
+                            route: AppRoutes.iaDocente,
+                            color: kNeonBlue
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 8: TRÁMITES Y AGENDA
+                          _buildSectionLabel('TRÁMITES Y AGENDA'),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.assignment_outlined,
+                            title: 'Trámites', 
+                            route: AppRoutes.tramites,
+                            color: Colors.amberAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.event_outlined,
+                            title: 'Agenda de Trámites', 
+                            route: AppRoutes.agendaTramites,
+                            color: kNeonPurple
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.task_outlined,
+                            title: 'Pendientes', 
+                            route: AppRoutes.pendientes,
+                            color: Colors.redAccent
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.notifications_outlined,
+                            title: 'Recordatorios', 
+                            route: AppRoutes.recordatorios,
+                            color: kNeonCyan
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // SECTION 9: CONFIGURACIÓN
+                          _buildSectionLabel('CONFIGURACIÓN'),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.settings_outlined, 
+                            title: 'Ajustes', 
+                            route: AppRoutes.settings,
+                            color: Colors.white70 
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.diamond_outlined, 
+                            title: 'Planes Premium', 
+                            route: AppRoutes.premiumPlans,
+                            color: kNeonGold 
+                          ),
+                          _buildMenuItem(
+                            context, 
+                            icon: Icons.policy_outlined,
+                            title: 'Legal', 
+                            route: AppRoutes.legal,
+                            color: Colors.white54
+                          ),
+                          
+                          // FOOTER at end of scroll
+                          const SizedBox(height: 24),
+                          Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+                          const SizedBox(height: 24),
+                          
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.logout_outlined,
+                            title: 'Cerrar Sesión',
+                            onTap: () {
+                              // Logout logic
+                              Navigator.pushReplacementNamed(context, AppRoutes.root);
+                            },
+                            color: Colors.white54,
+                            isFooter: true,
+                          ),
+                          const SizedBox(height: 16),
+                          Center(
+                            child: Text(
+                              'Versión 2.0.0 (Premium)',
+                              style: GoogleFonts.outfit(color: Colors.white24, fontSize: 10, letterSpacing: 1),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(top: 60, bottom: 30, left: 24, right: 24),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.02),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center, // Centered as requested
+        children: [
+          // Minimalist Icon
+          Container(
+            padding: const EdgeInsets.all(1.5), // Thinner border
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              // Subtle gradient border
+              gradient: LinearGradient(
+                colors: [kNeonBlue.withOpacity(0.8), kNeonViolet.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(color: kNeonBlue.withOpacity(0.2), blurRadius: 10)
+              ]
+            ),
+            child: CircleAvatar(
+              radius: 32,
+              backgroundColor: const Color(0xFF050914),
+              child: const Icon(Icons.person, size: 30, color: kNeonBlue),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'EMPRENDEDOR',
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 6, height: 6,
+                decoration: const BoxDecoration(color: kNeonGreen, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Plan Premium',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, bottom: 8, top: 4),
+      child: Text(
+        text,
+        style: GoogleFonts.outfit(
+          color: Colors.white38,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required IconData icon, 
+    required String title, 
+    String? route,
+    VoidCallback? onTap,
+    Color color = Colors.white,
+    bool isFooter = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Don't close drawer - keep it open for navigation
+          if (onTap != null) {
+            onTap();
+          } else if (route != null) {
+            Navigator.pushNamed(context, route);
+          }
+        },
+        hoverColor: color.withOpacity(0.1),
+        splashColor: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          margin: const EdgeInsets.only(bottom: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color.withOpacity(0.9), size: 22), // Lineal neon icon
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    color: isFooter ? color : Colors.white.withOpacity(0.9),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

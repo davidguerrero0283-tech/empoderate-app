@@ -1,0 +1,1506 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:fl_chart/fl_chart.dart'; // For salary history chart
+import '../../components/premium_scaffold.dart';
+import '../../components/neon_widgets.dart';
+import '../../components/calculator_info_panel.dart';
+import '../../calculators/salario_models.dart';
+import '../../calculators/liquidacion_models.dart'; // For SalaryHistoryEntry
+import '../../calculators/salario_logic.dart';
+import '../../services/worker_service.dart';
+import 'comprobante_planilla_screen.dart';
+import '../../features/analytics/analytics_service.dart';
+import '../../calculators/pa_recargo_rules.dart'; // Strict Rules Import
+import 'worker_detail_screen.dart'; // Import Detail Screen
+import 'liquidacion_screen.dart'; // Import for navigation
+import '../../features/payroll/domain/payroll_record.dart'; // History Model
+
+class SalarioScreen extends StatefulWidget {
+  final String? initialWorkerId;
+  const SalarioScreen({Key? key, this.initialWorkerId}) : super(key: key);
+
+  @override
+  _SalarioScreenState createState() => _SalarioScreenState();
+}
+
+class _SalarioScreenState extends State<SalarioScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
+  final SalarioInputModel _input = SalarioInputModel();
+  SalarioResultModel? _result;
+  bool _isLoading = false;
+  // View options
+  bool _showEmployerCosts = false;
+  bool _showProvisions = false;
+
+  // Controllers
+  late TextEditingController _nameCtrl;
+  late TextEditingController _posCtrl;
+  late TextEditingController _deptCtrl;
+  late TextEditingController _salaryCtrl;
+  
+  // Persistence
+  List<WorkerProfile> _workers = [];
+  String? _selectedWorkerId;
+  final WorkerService _workerService = WorkerService();
+
+  final GlobalKey _resultsKey = GlobalKey(); // Key for auto-scroll
+  final GlobalKey _employerCostsKey = GlobalKey();
+  final GlobalKey _provisionsKey = GlobalKey();
+
+  final GlobalKey _generalDataKey = GlobalKey();
+  
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService().trackScreenView('CalculadoraSalario');
+    _nameCtrl = TextEditingController();
+    _posCtrl = TextEditingController();
+    _deptCtrl = TextEditingController();
+    _salaryCtrl = TextEditingController();
+    _loadWorkers();
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _posCtrl.dispose();
+    _deptCtrl.dispose();
+    _salaryCtrl.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadWorkers() async {
+    final list = await _workerService.getWorkers();
+    if (mounted) {
+      setState(() => _workers = list);
+      
+      // Auto-select ONLY on first load (no worker selected yet) and if initial ID was passed
+      if (_selectedWorkerId == null && widget.initialWorkerId != null) {
+        try {
+          final w = list.firstWhere((element) => element.id == widget.initialWorkerId);
+          _selectWorker(w);
+        } catch (e) {
+          debugPrint('Initial worker not found: ${widget.initialWorkerId}');
+        }
+      }
+    }
+  }
+
+
+  Future<void> _saveWorker() async {
+    if (_input.workerName.isEmpty) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese el nombre del trabajador')));
+       return;
+    }
+
+    // Preserve existing history if updating
+    // Preserve existing history if updating
+    List<PayrollRecord> existingHistory = [];
+    if (_selectedWorkerId != null) {
+      try {
+        final existing = _workers.firstWhere((w) => w.id == _selectedWorkerId);
+        existingHistory = existing.payrollHistory;
+      } catch (_) {}
+    }
+
+    final newProfile = WorkerProfile(
+      id: _selectedWorkerId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      name: _input.workerName,
+      position: _input.position,
+      department: _input.companyName,
+      paymentMode: _input.frequency,
+      basePayment: _input.baseSalary,
+      lastCalcTotal: _result?.netSalary,
+      lastCalcDate: _result != null ? DateTime.now() : null,
+      payrollHistory: existingHistory,
+    );
+
+    await _workerService.saveWorker(newProfile);
+    _loadWorkers();
+    
+    if (mounted) {
+      setState(() => _selectedWorkerId = newProfile.id);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Trabajador guardado exitosamente'), backgroundColor: Colors.green));
+    }
+  }
+
+  Future<void> _deleteWorker(String id) async {
+    bool confirm = await showDialog(
+      context: context, 
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF001225),
+        title: const Text('¿Eliminar trabajador?', style: TextStyle(color: Colors.white)),
+        content: const Text('Esta acción no se puede deshacer.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red))),
+        ],
+      )
+    ) ?? false;
+
+    if (!confirm) return;
+
+    await _workerService.deleteWorker(id);
+    _loadWorkers();
+    if (_selectedWorkerId == id) _resetForm();
+  }
+
+  void _selectWorker(WorkerProfile w) {
+    setState(() {
+      _selectedWorkerId = w.id;
+      _input.workerName = w.name;
+      _input.position = w.position;
+      _input.companyName = w.department;
+      _input.baseSalary = w.basePayment;
+      _input.frequency = w.paymentMode;
+      
+      // Update Controllers
+      _nameCtrl.text = w.name;
+      _posCtrl.text = w.position;
+      _deptCtrl.text = w.department;
+      _salaryCtrl.text = w.basePayment > 0 ? w.basePayment.toString() : '';
+      
+      _result = null; // Clear previous result
+    });
+    // Removed auto-calculate to prevent navigation freeze
+  }
+  
+  void _openWorkerDetail(WorkerProfile w) async {
+    final action = await Navigator.push(
+      context, 
+      MaterialPageRoute(builder: (_) => WorkerDetailScreen(worker: w, onUpdate: _loadWorkers))
+    );
+    
+    if (action == 'EDIT_PROFILE') {
+      _selectWorker(w);
+    } else if (action is Map && (action['action'] == 'LOAD_SNAPSHOT' || action['action'] == 'DUPLICATE_SNAPSHOT')) {
+       _selectWorker(w); // Select the worker first
+       _loadSnapshot(action['snapshot']);
+       
+       if (action['action'] == 'DUPLICATE_SNAPSHOT') {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Modo Duplicar: Se cargaron los datos. Cambie el periodo al guardar.'),
+            backgroundColor: kNeonGold,
+          ));
+       }
+    }
+  }
+
+  /// Improved scroll helper that waits for layout to settle
+  void _scrollTo(GlobalKey key, {int delayMs = 200}) {
+    if (!mounted) return;
+    
+    // Wait for layout to fully stabilize before scrolling
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Future.delayed(Duration(milliseconds: delayMs), () {
+        if (!mounted) return;
+        final context = key.currentContext;
+        if (context != null) {
+          Scrollable.ensureVisible(
+            context,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+            alignment: 0.0, // Precise top alignment for maximum stability
+          );
+        }
+      });
+    });
+  }
+
+
+  void _loadSnapshot(Map<String, dynamic> snapshot) {
+    setState(() {
+       // Load Input Logic
+       final loaded = SalarioInputModel.fromJson(snapshot);
+       // We copy fields to _input
+       _input.workerName = loaded.workerName;
+       _input.position = loaded.position;
+       _input.companyName = loaded.companyName;
+       _input.periodStart = loaded.periodStart;
+       _input.periodEnd = loaded.periodEnd;
+       _input.baseSalary = loaded.baseSalary;
+       _input.frequency = loaded.frequency;
+       _input.diaTipo = loaded.diaTipo;
+       
+       // Hours
+       _input.horasDiurnasOrd = loaded.horasDiurnasOrd;
+       _input.horasMixtasOrd = loaded.horasMixtasOrd;
+       _input.horasNocturnasOrd = loaded.horasNocturnasOrd;
+       _input.horasExtraDiurna = loaded.horasExtraDiurna;
+       _input.horasExtraNocturna = loaded.horasExtraNocturna;
+       _input.horasExtraMixtaNocturna = loaded.horasExtraMixtaNocturna;
+       
+       // Money
+       _input.commissions = loaded.commissions;
+       _input.bonuses = loaded.bonuses;
+       _input.otherIncome = loaded.otherIncome;
+       _input.otherDeductions = loaded.otherDeductions;
+       
+       // Update Controllers so UI matches
+       _nameCtrl.text = _input.workerName;
+       _posCtrl.text = _input.position;
+       _deptCtrl.text = _input.companyName;
+       _salaryCtrl.text = _input.baseSalary.toStringAsFixed(2);
+       
+       // Clear Result to force Re-calc
+       _result = null;
+       
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Planilla cargada. Revise los datos y presione Calcular.')));
+    });
+  }
+
+  Future<void> _saveHistory() async {
+    if (_result == null || _selectedWorkerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debe seleccionar un trabajador y calcular primero.')));
+      return;
+    }
+    
+    // 1. Selector "Guardar como planilla del período"
+    // Modal to choose: Month/Quincena
+    final now = DateTime.now();
+    int selectedYear = now.year;
+    int selectedMonth = now.month;
+    bool isQuincenal = _input.frequency == PayrollFrequency.quincenal;
+    int selectedQuincena = 1; // 1 or 2
+    
+    // We use a Dialog to capture precisely the period
+    bool? saved = await showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            String periodPreview = '';
+            String monthName = DateFormat('MMMM', 'es').format(DateTime(selectedYear, selectedMonth));
+            if (isQuincenal) {
+               periodPreview = '${selectedQuincena}ª Quincena de $monthName $selectedYear'; 
+            } else {
+               periodPreview = '$monthName $selectedYear';
+            }
+          
+            return AlertDialog(
+              backgroundColor: const Color(0xFF001225),
+              title: const Text('Guardar en Historial', style: TextStyle(color: kNeonGold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   Text('Confirma la fecha de esta planilla para el registro oficial.', style: GoogleFonts.roboto(color: Colors.white70, fontSize: 13)),
+                   const SizedBox(height: 16),
+                   // Year
+                   Row(
+                     children: [
+                       const Text('Año:', style: TextStyle(color: Colors.white54)),
+                       const SizedBox(width: 8),
+                       DropdownButton<int>(
+                         value: selectedYear,
+                         dropdownColor: Colors.black,
+                         items: [now.year - 1, now.year, now.year + 1]
+                            .map((y) => DropdownMenuItem(value: y, child: Text(y.toString(), style: const TextStyle(color: Colors.white)))).toList(), 
+                         onChanged: (v) => setState(() => selectedYear = v!)
+                       ),
+                     ],
+                   ),
+                   // Month
+                   Row(
+                     children: [
+                       const Text('Mes:', style: TextStyle(color: Colors.white54)),
+                       const SizedBox(width: 8),
+                       DropdownButton<int>(
+                         value: selectedMonth,
+                         dropdownColor: Colors.black,
+                         items: List.generate(12, (i) => i + 1).map((m) {
+                            String mName = DateFormat('MMM', 'es').format(DateTime(2022, m));
+                            return DropdownMenuItem(value: m, child: Text(mName.toUpperCase(), style: const TextStyle(color: Colors.white)));
+                         }).toList(),
+                         onChanged: (v) => setState(() => selectedMonth = v!)
+                       ),
+                     ],
+                   ),
+                   // Period Type Toggle
+                   const SizedBox(height: 12),
+                   Row(
+                     children: [
+                       ChoiceChip(
+                         label: const Text('Mensual'), 
+                         selected: !isQuincenal,
+                         onSelected: (v) => setState(() => isQuincenal = !v),
+                         selectedColor: kNeonBlue,
+                       ),
+                       const SizedBox(width: 8),
+                       ChoiceChip(
+                         label: const Text('Quincenal'), 
+                         selected: isQuincenal,
+                         onSelected: (v) => setState(() => isQuincenal = v),
+                         selectedColor: kNeonBlue,
+                       ),
+                     ],
+                   ),
+                   if (isQuincenal) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ChoiceChip(label: const Text('1ra Quincena'), selected: selectedQuincena == 1, onSelected: (v) => setState(() => selectedQuincena = 1), selectedColor: kNeonGold),
+                          const SizedBox(width: 8),
+                          ChoiceChip(label: const Text('2da Quincena'), selected: selectedQuincena == 2, onSelected: (v) => setState(() => selectedQuincena = 2), selectedColor: kNeonGold),
+                        ],
+                      )
+                   ],
+                   const SizedBox(height: 16),
+                   Container(
+                     padding: const EdgeInsets.all(12),
+                     width: double.infinity,
+                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                     child: Text(periodPreview, textAlign: TextAlign.center, style: const TextStyle(color: kNeonGreen, fontWeight: FontWeight.bold)),
+                   ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true), 
+                  child: const Text('GUARDAR', style: TextStyle(color: kNeonGold, fontWeight: FontWeight.bold))
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+    
+    if (saved != true) return;
+    
+    // Logic to build Keys
+    String padMonth = selectedMonth.toString().padLeft(2, '0');
+    String periodKey = '$selectedYear-$padMonth';
+    String periodLabel = '';
+    
+    final monthNameFull = DateFormat('MMMM', 'es').format(DateTime(selectedYear, selectedMonth));
+    String mCapitalized = monthNameFull[0].toUpperCase() + monthNameFull.substring(1);
+
+    if (isQuincenal) {
+       periodKey = '$selectedYear-$padMonth-Q$selectedQuincena';
+       periodLabel = '${selectedQuincena}ª $mCapitalized $selectedYear';
+    } else {
+       periodLabel = '$mCapitalized $selectedYear';
+    }
+    
+    // 2. Create Record (PayrollRecord)
+    final record = PayrollRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      periodKey: periodKey,
+      periodLabel: periodLabel,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      inputSnapshot: _input.toJson(),
+      resultSnapshot: _result!.toJson(),
+    );
+    
+    // 3. Update Worker
+    final worker = _workers.firstWhere((w) => w.id == _selectedWorkerId);
+    
+    // Check dupe
+    final index = worker.payrollHistory.indexWhere((h) => h.periodKey == periodKey);
+    if (index >= 0) {
+      bool overwrite = await showDialog(
+        context: context, 
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF001225),
+          title: const Text('Periodo ya existe', style: TextStyle(color: Colors.orangeAccent)),
+          content: Text('Ya existe un registro para "$periodLabel". ¿Desea sobrescribirlo con este nuevo cálculo?', style: const TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sobrescribir', style: TextStyle(color: kNeonGold))),
+          ],
+        )
+      ) ?? false;
+      
+      if (!overwrite) return;
+      worker.payrollHistory[index] = record;
+    } else {
+      worker.payrollHistory.add(record);
+    }
+    
+    // Sort logic (Newest first)
+    worker.payrollHistory.sort((a, b) => b.periodKey.compareTo(a.periodKey));
+    
+    await _workerService.saveWorker(worker);
+    await _loadWorkers(); // Refresh
+    
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Planilla "$periodLabel" guardada.')));
+  }
+
+  void _resetForm() {
+    setState(() {
+      _selectedWorkerId = null;
+      _input.workerName = '';
+      _input.position = '';
+      _input.companyName = '';
+      _input.baseSalary = 0;
+      _result = null;
+      
+      _nameCtrl.clear();
+      _posCtrl.clear();
+      _deptCtrl.clear();
+      _salaryCtrl.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Formulario limpio para nuevo trabajador')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumScaffold(
+      title: 'CALCULADORA DE SALARIO',
+      useScroll: false,
+      usePadding: false,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Determine if we should use two columns or stack vertically
+          final bool useTwoColumns = constraints.maxWidth > 900;
+          
+          return SingleChildScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const CalculatorInfoPanel(configId: 'planilla'), const SizedBox(height: 16), if (_workers.isNotEmpty) _buildSavedWorkersCarousel(), const SizedBox(height: 16),,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+
+
+                              
+                              // Import Liquidation Screen dynamically if needed, but we need to add import at top first.
+                              // Assuming LiquidacionScreen is available or we add import.
+                              // Check imports in next step. For now assume we need to add it.
+                              Navigator.pushNamed(context, '/liquidacion', arguments: w); 
+                           }
+                         ),
+                       ),
+                     ],
+                   ),
+                ],
+              ),
+              const SizedBox(height: 80),
+            ],
+          ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: NeonSectionTitle(title: title, color: kNeonGold),
+    );
+  }
+
+  // Collapsible section for optional fields - reduces scroll confusion
+  Widget _buildCollapsibleSection({
+    required String title,
+    required String subtitle,
+    required Widget child,
+    required Color borderColor,
+    bool initiallyExpanded = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1520),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor.withOpacity(0.4)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          initiallyExpanded: initiallyExpanded,
+          title: Text(title, style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+          subtitle: Text(subtitle, style: GoogleFonts.outfit(color: Colors.white38, fontSize: 11)),
+          iconColor: borderColor,
+          collapsedIconColor: borderColor,
+          children: [child],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateSelector(String label, DateTime date, Function(DateTime) onSelect) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context, 
+          initialDate: date, 
+          firstDate: DateTime(2000), 
+          lastDate: DateTime(2050),
+          builder: (context, child) {
+            return Theme(
+              data: ThemeData.dark().copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: kNeonGold,
+                  onPrimary: Colors.black,
+                  surface: Color(0xFF001225),
+                  onSurface: Colors.white,
+                ),
+                dialogBackgroundColor: const Color(0xFF001225),
+              ),
+              child: child!,
+            );
+          }
+        );
+        if (picked != null) onSelect(picked);
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+          enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+          suffixIcon: const Icon(Icons.calendar_today, color: kNeonGold, size: 16),
+        ),
+        child: Text(DateFormat('dd/MM/yyyy').format(date), style: const TextStyle(color: Colors.white, fontSize: 13)),
+      ),
+    );
+  }
+
+  Widget _buildFrequencyDropdown() {
+    return DropdownButtonFormField<PayrollFrequency>(
+      value: _input.frequency,
+      dropdownColor: const Color(0xFF001225),
+      decoration: const InputDecoration(
+        labelText: 'Frecuencia de Pago',
+        labelStyle: TextStyle(color: Colors.white54),
+        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: kNeonBlue)),
+        filled: false,
+      ),
+      items: PayrollFrequency.values.map((f) {
+        String label = '';
+        switch (f) {
+          case PayrollFrequency.mensual: label = 'Mensual'; break;
+          case PayrollFrequency.quincenal: label = 'Quincenal'; break;
+          case PayrollFrequency.semanal: label = 'Semanal'; break;
+        }
+        return DropdownMenuItem(value: f, child: Text(label, style: const TextStyle(color: Colors.white)));
+      }).toList(),
+      onChanged: (v) => setState(() => _input.frequency = v!),
+    );
+  }
+
+  Widget _buildSavedWorkersCarousel() {
+    // Compact horizontal cards with ClipRect to prevent layout overflow
+    return ClipRect(
+      child: SizedBox(
+        height: 72,
+        child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _workers.length,
+        itemBuilder: (context, index) {
+          final w = _workers[index];
+          final isSelected = _selectedWorkerId == w.id;
+          return Container(
+            width: 200, // Compact width
+            margin: const EdgeInsets.only(right: 8),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _selectWorker(w),
+                onLongPress: () => _showWorkerOptions(w),
+                borderRadius: BorderRadius.circular(10),
+                splashColor: kNeonGold.withOpacity(0.2),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: isSelected ? kNeonGold.withOpacity(0.15) : const Color(0xFF151C2B),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? kNeonGold : Colors.white10,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        // Avatar
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: kNeonBlue.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: kNeonBlue.withOpacity(0.3)),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            _getInitials(w.name),
+                            style: GoogleFonts.outfit(color: kNeonBlue, fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Name and Position
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                w.name, 
+                                maxLines: 1, 
+                                overflow: TextOverflow.ellipsis, 
+                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)
+                              ),
+                              Text(
+                                w.position, 
+                                maxLines: 1, 
+                                overflow: TextOverflow.ellipsis, 
+                                style: GoogleFonts.outfit(color: Colors.white54, fontSize: 10)
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Selection indicator
+                        if (isSelected)
+                          const Icon(Icons.check_circle, color: kNeonGold, size: 16)
+                        else
+                          Icon(Icons.chevron_right, color: Colors.white24, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        ),
+      ),
+    );
+  }
+
+  // Helper for initials
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
+      return parts[0][0].toUpperCase();
+    }
+    return '?';
+  }
+  
+  void _showWorkerOptions(WorkerProfile w) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF001225),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit, color: kNeonBlue),
+              title: const Text('Editar Datos Básicos (Cargar)', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _selectWorker(w);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_forever, color: kNeonRed),
+              title: const Text('Eliminar Trabajador', style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _deleteWorker(w.id);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoAccordion({required String title, required String content}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          title: Row(
+            children: [
+              const Icon(Icons.info_outline, color: kNeonBlue, size: 18),
+              const SizedBox(width: 8),
+              Text(title, style: GoogleFonts.outfit(color: kNeonBlue, fontSize: 13)),
+            ],
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+              child: Text(
+                content,
+                style: GoogleFonts.roboto(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _calculate() async {
+    // Dismiss keyboard to prevent jumpy scroll behavior
+    FocusScope.of(context).unfocus();
+    
+    if (_input.baseSalary <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un salario base válido.'), backgroundColor: Colors.orangeAccent));
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+
+    try {
+      AnalyticsService().trackAction('usar_calculadora_planilla');
+      final res = SalarioLogic.calculate(_input);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _result = res;
+        _isLoading = false;
+      });
+      
+      _scrollTo(_resultsKey);
+      
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+
+  Widget _buildResultSection() {
+    return NeonCard(
+      key: _resultsKey, 
+      borderColor: kNeonGreen,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           _buildSectionTitle('Resultado de Planilla'),
+           const SizedBox(height: 12),
+           
+           if (_selectedWorkerId != null) ...[
+             NeonButton(
+               text: 'Guardar como planilla del período', 
+               onTap: _saveHistory, 
+               primary: false, 
+               color: kNeonGold.withOpacity(0.2), 
+               textColor: kNeonGold,
+               icon: Icons.history_edu,
+             ),
+             const SizedBox(height: 24),
+           ],
+
+          _buildRow('Salario Base Periodo', _result!.baseIncome),
+          
+          if (_result!.pagoOrdinario > 0)
+            _buildRow('Pago Horas Ordinarias (Incl. Dom/Fiesta)', _result!.pagoOrdinario, color: kNeonBlue),
+          if (_result!.pagoExtras > 0)
+            _buildRow('Pago Horas Extras', _result!.pagoExtras, color: Colors.orangeAccent),
+          
+          if (_result!.commissionsAmount > 0) _buildRow('Comisiones', _result!.commissionsAmount),
+          if (_result!.bonusesAmount > 0) _buildRow('Bonificaciones', _result!.bonusesAmount),
+          
+          const Divider(color: Colors.white24, height: 24),
+          _buildRow('TOTAL DEVENGADO', _result!.totalDevengado, isBold: true, color: Colors.greenAccent),
+          
+          // Debug/Factors Table (Mini)
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+            child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                  Text('FACTORES APLICADOS:', style: GoogleFonts.robotoMono(fontSize: 10, color: Colors.white54)),
+                  Text('Tipo Día: ${_result!.factoresAplicados['diaTipo'].toString().toUpperCase()}', style: GoogleFonts.robotoMono(fontSize: 10, color: Colors.white38)),
+                  Text('Factor Día: x${_result!.factoresAplicados['factorDia']}', style: GoogleFonts.robotoMono(fontSize: 10, color: Colors.white38)),
+                  Text('Tasa Hora: \$${(_result!.factoresAplicados['tasaHora'] as double).toStringAsFixed(2)}', style: GoogleFonts.robotoMono(fontSize: 10, color: Colors.white38)),
+               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Text('DEDUCCIONES EMPLEADO', style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold)),
+          _buildRow('Seguro Social (9.75%)', _result!.css, isNegative: true),
+          _buildRow('Seguro Educativo (1.25%)', _result!.se, isNegative: true),
+          
+          if (_result!.isr > 0) ...[
+             _buildRow('Base Imponible ISR', _result!.rentaNetaGravable, color: Colors.white30),
+             _buildRow('ISR (Progresivo)', _result!.isr, isNegative: true),
+          ] else 
+             _buildRow('ISR (Impuesto sobre Renta)', 0.0, isNegative: true, color: Colors.white30),
+
+          if (_result!.otherDeductions > 0) _buildRow('Otros Descuentos', _result!.otherDeductions, isNegative: true),
+          
+          const Divider(color: Colors.white24, height: 24),
+          _buildRow('TOTAL DEDUCCIONES', _result!.totalDeducciones, isNegative: true, isBold: true),
+          
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: kNeonGold.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: kNeonGold, width: 1.5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('NETO A PAGAR', style: GoogleFonts.outfit(color: kNeonGold, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('\$${_result!.netSalary.toStringAsFixed(2)}', style: GoogleFonts.outfit(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Toggles for Advanced Info
+          SwitchListTile(
+            value: _showEmployerCosts,
+            onChanged: (v) {
+              setState(() => _showEmployerCosts = v);
+              if (v) _scrollTo(_employerCostsKey);
+            },
+            activeColor: kNeonBlue,
+            title: Text('Ver Costos Patronales', style: GoogleFonts.outfit(color: Colors.white)),
+          ),
+          if (_showEmployerCosts) ...[
+            Container(
+              key: _employerCostsKey,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(8)),
+              child: Column(
+                children: [
+                   _buildRow('SS Patrono (12.25%)', _result!.ssPatrono),
+                   _buildRow('SE Patrono (1.50%)', _result!.sePatrono),
+                   _buildRow('Riesgos Prof. (2.10%)', _result!.riesgos),
+                   const Divider(color: Colors.white12),
+                   _buildRow('Costo Total Empresa', _result!.costoTotalEmpresa, isBold: true, color: kNeonBlue),
+                ],
+              ),
+            ),
+          ],
+
+          SwitchListTile(
+            value: _showProvisions,
+            onChanged: (v) {
+              setState(() => _showProvisions = v);
+              if (v) _scrollTo(_provisionsKey);
+            },
+            activeColor: kNeonBlue,
+            title: Text('Ver Provisiones (Estimadas)', style: GoogleFonts.outfit(color: Colors.white)),
+          ),
+          if (_showProvisions) ...[
+            Container(
+              key: _provisionsKey,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(8)),
+              child: Column(
+                children: [
+                   Text('Acumulado por periodo', style: GoogleFonts.outfit(color: Colors.white38, fontSize: 10)),
+                   const SizedBox(height: 4),
+                   _buildRow('XIII Mes', _result!.decimoTercerMes),
+                   _buildRow('Vacaciones', _result!.vacaciones),
+                   _buildRow('Prima Antigüedad', _result!.primaAntiguedad),
+                   const Divider(color: Colors.white12),
+                   _buildRow('Total Provisiones', _result!.totalPrestaciones, isBold: true, color: Colors.orangeAccent),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(child: NeonButton(text: 'Ver Comprobante', primary: true, onTap: _navigateToPreview)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              'Motor de cálculo: PayrollEngine v2 (Strict Panama Rules)',
+              style: GoogleFonts.robotoMono(color: Colors.white24, fontSize: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToPreview() {
+    if (_result == null) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ComprobantePlanillaScreen(input: _input, result: _result!)));
+  }
+
+  Widget _buildRow(String label, double amount, {bool isBold = false, bool isNegative = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text(
+            '${isNegative ? "-" : ""}\$${amount.toStringAsFixed(2)}', 
+            style: GoogleFonts.outfit(
+              color: color ?? (isNegative ? Colors.redAccent : (isBold ? Colors.white : kNeonGreen)), 
+              fontSize: isBold ? 15 : 13, 
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal
+            )
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistorySection() {
+    final worker = _workers.firstWhere((w) => w.id == _selectedWorkerId);
+    final history = worker.payrollHistory;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        const NeonSectionTitle(title: 'Historial de Pagos', color: kNeonBlue),
+        const SizedBox(height: 16),
+        ...history.map((record) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF151C2B),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: kNeonBlue.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.receipt_long, color: kNeonBlue),
+              ),
+              title: Text(record.periodLabel, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(record.createdAt), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('\$${record.netSalary.toStringAsFixed(2)}', style: GoogleFonts.outfit(color: kNeonGreen, fontWeight: FontWeight.bold, fontSize: 15)),
+                  const Text('Neto a Pagar', style: TextStyle(color: Colors.white30, fontSize: 9)),
+                ],
+              ),
+              onTap: () {
+                 // Load snapshot logic
+                 showModalBottomSheet(
+                   context: context, 
+                   backgroundColor: const Color(0xFF001225),
+                   builder: (ctx) => SafeArea(
+                     child: Column(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         ListTile(
+                           leading: const Icon(Icons.visibility, color: kNeonGreen),
+                           title: const Text('Ver / Recalcular', style: TextStyle(color: Colors.white)),
+                           onTap: () {
+                             Navigator.pop(ctx);
+                             _loadSnapshot(record.inputSnapshot);
+                           }
+                         ),
+                         ListTile(
+                           leading: const Icon(Icons.delete, color: Colors.redAccent),
+                           title: const Text('Eliminar Registro', style: TextStyle(color: Colors.redAccent)),
+                           onTap: () async {
+                             Navigator.pop(ctx);
+                             bool confirm = await showDialog(
+                               context: context, 
+                               builder: (c) => AlertDialog(
+                                 backgroundColor: const Color(0xFF001225),
+                                 title: const Text('¿Eliminar?', style: TextStyle(color: Colors.white)),
+                                 content: const Text('Se borrará este registro del historial.', style: TextStyle(color: Colors.white70)),
+                                 actions: [
+                                   TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+                                   TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red))),
+                                 ],
+                               )
+                             ) ?? false;
+                             
+                             if (confirm) {
+                               setState(() {
+                                 worker.payrollHistory.removeWhere((r) => r.id == record.id);
+                               });
+                               await _workerService.saveWorker(worker);
+                             }
+                           }
+                         ),
+                       ],
+                     ),
+                   )
+                 );
+              },
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+  
+  // ========== SALARY HISTORY METHODS ==========
+  
+  Widget _buildSalaryHistorySection() {
+    if (_input.salaryHistory.isEmpty) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.history, color: Colors.white30, size: 40),
+                const SizedBox(height: 8),
+                Text(
+                  'Sin registros históricos',
+                  style: GoogleFonts.outfit(color: Colors.white38),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Agrega años para llevar un registro profesional de ingresos',
+                  style: GoogleFonts.roboto(color: Colors.white24, fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          NeonButton(
+            text: '+ Añadir Año',
+            icon: Icons.add,
+            primary: false,
+            color: kNeonBlue,
+            onTap: _addSalaryYear,
+          ),
+        ],
+      );
+    }
+    
+    // Group by year
+    Map<int, List<SalaryHistoryEntry>> byYear = {};
+    for (var entry in _input.salaryHistory) {
+      byYear.putIfAbsent(entry.year, () => []).add(entry);
+    }
+    
+    // Sort months within each year
+    for (var yearEntries in byYear.values) {
+      yearEntries.sort((a, b) => a.month.compareTo(b.month));
+    }
+    
+    List<int> years = byYear.keys.toList()..sort((a, b) => b.compareTo(a));
+    
+    return Column(
+      children: [
+        Container(
+          constraints: const BoxConstraints(maxHeight: 350),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: years.length,
+            itemBuilder: (context, index) {
+              final year = years[index];
+              final yearEntries = byYear[year]!;
+              final yearTotal = yearEntries
+                  .where((e) => e.includedInCalculation)
+                  .fold(0.0, (sum, e) => sum + e.amount);
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF151C2B), // Darker, theme consistent
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: ExpansionTile(
+                  title: Text(
+                    '$year',
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '${yearEntries.length} meses',
+                    style: GoogleFonts.roboto(color: Colors.white54, fontSize: 11),
+                  ),
+                  trailing: Text(
+                    '\$${yearTotal.toStringAsFixed(2)}',
+                    style: GoogleFonts.outfit(color: kNeonGold, fontWeight: FontWeight.bold),
+                  ),
+                  children: [
+                    // Autocomplete row
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: _buildAutocompleteRow(year),
+                    ),
+                    const Divider(color: Colors.white12),
+                    ...yearEntries.map((entry) => _buildSalaryMonthRow(entry)),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: NeonButton(
+                        text: '+ Añadir Mes',
+                        icon: Icons.add,
+                        primary: false,
+                        color: Colors.white10,
+                        textColor: kNeonBlue,
+                        onTap: () => _addSalaryMonth(year),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        NeonButton(
+          text: '+ Añadir Año',
+          icon: Icons.add,
+          primary: false,
+          color: kNeonBlue,
+          onTap: _addSalaryYear,
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildAutocompleteRow(int year) {
+    TextEditingController controller = TextEditingController();
+    return Row(
+      children: [
+        Icon(Icons.auto_fix_high, color: kNeonGold, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: GoogleFonts.roboto(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Monto a repetir',
+              hintStyle: GoogleFonts.roboto(color: Colors.white38, fontSize: 12),
+              prefixText: '\$',
+              prefixStyle: GoogleFonts.roboto(color: kNeonGold),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton.icon(
+          onPressed: () {
+            final amount = double.tryParse(controller.text);
+            if (amount != null && amount > 0) {
+              _autocompleteSalaryYear(year, amount);
+              controller.clear();
+            }
+          },
+          icon: Icon(Icons.content_copy, size: 16),
+          label: Text('Aplicar', style: GoogleFonts.roboto(fontSize: 12)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kNeonGold,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildSalaryMonthRow(SalaryHistoryEntry entry) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: entry.includedInCalculation 
+            ? kNeonGold.withOpacity(0.05)
+            : Colors.white.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: entry.includedInCalculation
+              ? kNeonGold.withOpacity(0.3)
+              : Colors.white12,
+        ),
+      ),
+      child: Row(
+        children: [
+          Checkbox(
+            value: entry.includedInCalculation,
+            activeColor: kNeonGold,
+            onChanged: (v) {
+              setState(() {
+                entry.includedInCalculation = v ?? false;
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 70,
+            child: Text(
+              entry.monthName,
+              style: GoogleFonts.outfit(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextFormField(
+              initialValue: entry.amount > 0 ? entry.amount.toStringAsFixed(2) : '',
+              style: GoogleFonts.roboto(color: Colors.white),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Salario',
+                labelStyle: GoogleFonts.roboto(color: Colors.white54, fontSize: 12),
+                prefixText: '\$',
+                prefixStyle: GoogleFonts.roboto(color: kNeonGold),
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: kNeonGold),
+                ),
+              ),
+              onChanged: (v) {
+                setState(() {
+                  entry.amount = double.tryParse(v) ?? 0;
+                });
+              },
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: Colors.redAccent.withOpacity(0.7), size: 20),
+            onPressed: () {
+              setState(() {
+                _input.salaryHistory.remove(entry);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSalaryChart() {
+    // Prepare data for chart
+    final data = _input.salaryHistory
+        .where((e) => e.includedInCalculation && e.amount > 0)
+        .toList()
+      ..sort((a, b) {
+        final aDate = DateTime(a.year, a.month);
+        final bDate = DateTime(b.year, b.month);
+        return aDate.compareTo(bDate);
+      });
+    
+    if (data.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'No hay datos para mostrar',
+          style: GoogleFonts.roboto(color: Colors.white38),
+        ),
+      );
+    }
+    
+    return Container(
+      height: 200,
+      padding: const EdgeInsets.all(16),
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: (data.map((e) => e.amount).reduce((a, b) => a > b ? a : b) * 1.2).ceilToDouble(),
+          barTouchData: BarTouchData(enabled: true),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < data.length) {
+                    final entry = data[value.toInt()];
+                    return Text(
+                      '${entry.monthName}\n${entry.year.toString().substring(2)}',
+                      style: GoogleFonts.roboto(color: Colors.white54, fontSize: 9),
+                      textAlign: TextAlign.center,
+                    );
+                  }
+                  return const Text('');
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 50,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    '\$${value.toInt()}',
+                    style: GoogleFonts.roboto(color: Colors.white54, fontSize: 10),
+                  );
+                },
+              ),
+            ),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: 500,
+            getDrawingHorizontalLine: (value) {
+              return FlLine(
+                color: Colors.white.withOpacity(0.1),
+                strokeWidth: 1,
+              );
+            },
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: data.asMap().entries.map((entry) {
+            return BarChartGroupData(
+              x: entry.key,
+              barRods: [
+                BarChartRodData(
+                  toY: entry.value.amount,
+                  color: kNeonGold,
+                  width: 16,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+  
+  void _addSalaryYear() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        int selectedYear = DateTime.now().year;
+        return AlertDialog(
+          backgroundColor: const Color(0xFF001225),
+          title: Text('Añadir Año', style: GoogleFonts.outfit(color: kNeonGold)),
+          content: DropdownButton<int>(
+            value: selectedYear,
+            dropdownColor: const Color(0xFF001225),
+            items: List.generate(10, (i) => DateTime.now().year - i)
+                .map((year) => DropdownMenuItem(
+                      value: year,
+                      child: Text('$year', style: GoogleFonts.outfit(color: Colors.white)),
+                    ))
+                .toList(),
+            onChanged: (v) {
+              setState(() => selectedYear = v!);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar', style: const TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: kNeonGold, foregroundColor: Colors.black),
+              onPressed: () {
+                Navigator.pop(context);
+                _addSalaryMonth(selectedYear);
+              },
+              child: const Text('Continuar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  void _addSalaryMonth(int year) {
+    final existingMonths = _input.salaryHistory
+        .where((e) => e.year == year)
+        .map((e) => e.month)
+        .toSet();
+    
+    int? nextMonth;
+    for (int m = 1; m <= 12; m++) {
+      if (!existingMonths.contains(m)) {
+        nextMonth = m;
+        break;
+      }
+    }
+    
+    if (nextMonth == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ya hay 12 meses registrados para $year')),
+      );
+      return;
+    }
+    
+    setState(() {
+      _input.salaryHistory.add(SalaryHistoryEntry(
+        year: year,
+        month: nextMonth!,
+        amount: 0.0,
+        includedInCalculation: true,
+      ));
+    });
+  }
+  
+  void _autocompleteSalaryYear(int year, double amount) {
+    setState(() {
+      // Get or create all  12 months for this year
+      for (int month = 1; month <= 12; month++) {
+        final existing = _input.salaryHistory.firstWhere(
+          (e) => e.year == year && e.month == month,
+          orElse: () {
+            final newEntry = SalaryHistoryEntry(
+              year: year,
+              month: month,
+              amount: amount,
+              includedInCalculation: true,
+            );
+            _input.salaryHistory.add(newEntry);
+            return newEntry;
+          },
+        );
+        
+        // Update amount if entry already exists
+        if (_input.salaryHistory.contains(existing)) {
+          existing.amount = amount;
+        }
+      }
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('12 meses de $year completados con \$${amount.toStringAsFixed(2)}')),
+    );
+  }
+}
+

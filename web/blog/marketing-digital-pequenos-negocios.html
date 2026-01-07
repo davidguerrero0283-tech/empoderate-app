@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Digital Básico para Pymes | Empodérate Blog</title>
+    <meta name="description" content="Estrategias sencillas de marketing digital para pequeños negocios.">
+    <meta name="keywords" content="marketing digital, redes sociales, ventas, instagram">
+    <meta name="author" content="Empodérate">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Marketing Digital Básico para Pymes">
+    <meta property="og:description" content="Estrategias sencillas de marketing digital para pequeños negocios.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Empodérate">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Marketing Digital Básico para Pymes">
+    <meta name="twitter:description" content="Estrategias sencillas de marketing digital para pequeños negocios.">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a">
+    
+    <!-- Schema.org Article -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Introducción al marketing digital para pequeños negocios",
+        "description": "Estrategias sencillas de marketing digital, redes sociales y embudos de venta.",
+        "image": "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a",
+        "author": {
+            "@type": "Organization",
+            "name": "Empodérate"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Empodérate",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "/icons/Icon-192.png"
+            }
+        }
+    }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #001220 0%, #0a1628 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+        header {
+            background: rgba(0, 12, 32, 0.95);
+            border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00E5FF;
+            text-decoration: none;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #D4AF37, #F4D35E);
+            color: #001220;
+            padding: 10px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+        }
+        .hero {
+            height: 300px;
+            background: url('https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a') center/cover;
+            position: relative;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent 0%, #001220 100%);
+        }
+        .hero-content {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 24px;
+            z-index: 10;
+        }
+        .category {
+            display: inline-block;
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            color: #D4AF37;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 32px;
+            color: #fff;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 40px;
+        }
+        main {
+            min-width: 0;
+        }
+        article h2 {
+            color: #00E5FF;
+            margin: 32px 0 16px;
+            font-size: 24px;
+        }
+        article h3 {
+            color: #D4AF37;
+            margin: 24px 0 12px;
+            font-size: 18px;
+        }
+        article p {
+            margin-bottom: 16px;
+            color: #c0c0c0;
+        }
+        article ul, article ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+        article li {
+            margin-bottom: 8px;
+            color: #c0c0c0;
+        }
+        article strong {
+            color: #fff;
+        }
+        article code {
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #00E5FF;
+        }
+        article a {
+            color: #00E5FF;
+            text-decoration: underline;
+        }
+        .cta-box {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(244, 211, 94, 0.1));
+            border: 2px solid #D4AF37;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin: 48px 0;
+        }
+        .cta-box h3 {
+            color: #D4AF37;
+            margin-bottom: 12px;
+        }
+        .cta-box p {
+            margin-bottom: 20px;
+        }
+        aside {
+            position: sticky;
+            top: 100px;
+            align-self: start;
+        }
+        .sidebar-title {
+            color: #00E5FF;
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        .sidebar-article {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: #151C2B;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 12px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .sidebar-article:hover {
+            border-color: #D4AF37;
+            transform: translateX(4px);
+        }
+        .sidebar-article img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .sidebar-article div {
+            flex: 1;
+            min-width: 0;
+        }
+        .sidebar-category {
+            display: inline-block;
+            background: rgba(212, 175, 55, 0.15);
+            color: #D4AF37;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .sidebar-article h4 {
+            color: #fff;
+            font-size: 13px;
+            line-height: 1.3;
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        footer {
+            background: rgba(0, 12, 32, 0.95);
+            border-top: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 32px 24px;
+            text-align: center;
+            color: #888;
+        }
+        footer a {
+            color: #00E5FF;
+            text-decoration: none;
+        }
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            aside {
+                position: static;
+            }
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 24px; }
+            .hero { height: 220px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">EMPODÉRATE</a>
+            <a href="/" class="cta-button">🚀 Usar App Gratis</a>
+        </div>
+    </header>
+    
+    <div class="hero">
+        <div class="hero-content">
+            <span class="category">Marketing & Ventas</span>
+            <h1>Introducción al marketing digital para pequeños negocios</h1>
+        </div>
+    </div>
+    
+    <div class="container">
+        <main>
+            <article>
+                <h2>1. Conoce a tu Cliente Ideal</h2>
+<p>No puedes venderle a "todo el mundo". Define su edad, qué le preocupa, qué red social usa.</p>
+
+<h2>2. El Embudo Básico (AIDA)</h2>
+<ul>
+<li><strong>Atención:</strong> Que te vean (Reels, Ads, SEO)</li>
+<li><strong>Interés:</strong> Que les guste lo que ven</li>
+<li><strong>Deseo:</strong> Que quieran tu solución</li>
+<li><strong>Acción:</strong> Que compren</li>
+</ul>
+
+<h2>3. Google My Business</h2>
+<p>Si tienes local físico, esto es OBLIGATORIO. Es gratis y apareces en Google Maps.</p>
+
+<h2>4. Publicidad Pagada</h2>
+<p>El alcance orgánico es bajo. Invierte $5-10 en pauta bien segmentada.</p>
+
+            </article>
+            
+            <div class="cta-box">
+                <h3>📱 ¿Te fue útil este artículo?</h3>
+                <p>Empodérate tiene herramientas gratuitas para ayudarte a gestionar tu negocio: calculadoras, chatbot con IA, checklist de trámites y más.</p>
+                <a href="../index.html" class="cta-button">Probar Empodérate Gratis →</a>
+            </div>
+        </main>
+        
+        <aside>
+            <h3 class="sidebar-title">📚 Más Artículos</h3>
+                    <a href="como-abrir-negocio-panama.html" class="sidebar-article">
+            <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c" alt="Cómo abrir un negocio formal en Panamá paso a paso">
+            <div>
+                <span class="sidebar-category">Legal & Trámites</span>
+                <h4>Cómo abrir un negocio formal en Panamá paso a paso</h4>
+            </div>
+        </a>
+  
+        <a href="guia-itbms-impuestos-panama.html" class="sidebar-article">
+            <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c" alt="Guía básica del ITBMS y impuestos para emprendedores">
+            <div>
+                <span class="sidebar-category">Contabilidad & Finanzas</span>
+                <h4>Guía básica del ITBMS y impuestos para emprendedores</h4>
+            </div>
+        </a>
+  
+        <a href="como-fijar-precios-correctamente.html" class="sidebar-article">
+            <img src="https://images.unsplash.com/photo-1591696205602-2f950c417cb9" alt="Cómo fijar precios correctamente para ganar dinero">
+            <div>
+                <span class="sidebar-category">Gestión Empresarial</span>
+                <h4>Cómo fijar precios correctamente para ganar dinero</h4>
+            </div>
+        </a>
+  
+        <a href="como-llevar-primera-planilla.html" class="sidebar-article">
+            <img src="https://images.unsplash.com/photo-1521791136064-7986c2920216" alt="Cómo llevar tu primera planilla sin volverte loco">
+            <div>
+                <span class="sidebar-category">Recursos Humanos</span>
+                <h4>Cómo llevar tu primera planilla sin volverte loco</h4>
+            </div>
+        </a>
+  
+        <a href="errores-comunes-dinero-negocio.html" class="sidebar-article">
+            <img src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e" alt="7 errores comunes al manejar el dinero de tu negocio">
+            <div>
+                <span class="sidebar-category">Finanzas</span>
+                <h4>7 errores comunes al manejar el dinero de tu negocio</h4>
+            </div>
+        </a>
+  
+            <a href="index.html" class="cta-button" style="display: block; text-align: center; margin-top: 20px;">Ver Todos →</a>
+        </aside>
+    </div>
+    
+    <footer>
+        <p>© 2024 Empodérate · <a href="../index.html">Ir a la App</a> · <a href="index.html">Ver más artículos</a></p>
+    </footer>
+</body>
+</html>
