@@ -322,11 +322,6 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/rrhh/cumplimiento',
-        name: 'labor_compliance',
-        builder: (context, state) => const LaborComplianceScreen(),
-      ),
-      GoRoute(
         path: '/rrhh/plantillas',
         name: 'hr_templates',
         builder: (context, state) {
