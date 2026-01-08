@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:proyecto_empoderate/src/config/accounting_config.dart';
 import 'package:proyecto_empoderate/src/components/premium_scaffold.dart';
@@ -44,7 +45,7 @@ class _AccountingScreenOldState extends State<AccountingScreenOld> {
 
   Widget _buildHorizontalCard(BuildContext context, AccountingToolConfig tool) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, tool.route),
+      onTap: () => _safePush(context, tool.route, tool.title),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
@@ -96,8 +97,29 @@ class _AccountingScreenOldState extends State<AccountingScreenOld> {
       subtitle: '', 
       icon: tool.icon,
       neonColor: tool.color,
-      onTap: () => Navigator.pushNamed(context, tool.route),
+      onTap: () => _safePush(context, tool.route, tool.title),
       backgroundColor: Colors.white.withOpacity(0.05), // Match 'Simple' translucent background
     );
+  }
+
+  void _safePush(BuildContext context, String route, String title) {
+    try {
+      final GoRouter router = GoRouter.of(context);
+      final bool routeExists = router.configuration.routes.any((r) {
+        if (r is GoRoute) {
+          if (r.path == route) return true;
+          if (route.startsWith(r.path) && r.path != '/') return true;
+        }
+        return false;
+      });
+
+      if (routeExists) {
+        context.push(route);
+      } else {
+        context.push('/under_construction?title=$title&route=$route');
+      }
+    } catch (e) {
+      context.push('/under_construction?title=$title&route=$route');
+    }
   }
 }

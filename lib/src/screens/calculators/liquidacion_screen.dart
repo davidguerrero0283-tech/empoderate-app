@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -284,7 +285,7 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                  title: 'Calculadora de Liquidación',
                  categoryName: 'RECURSOS HUMANOS',
                  icon: Icons.handshake,
-                 onBackPressed: () => Navigator.pop(context),
+                 onBackPressed: () => context.pop(),
                ),
                
                Padding(
@@ -491,7 +492,7 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                       NeonButton(
                         text: '📁 Ver Archivo HR',
                         primary: false,
-                        onTap: () => Navigator.pushNamed(context, '/hr_archive'),
+                        onTap: () => context.push('/hr_archive'),
                         color: const Color(0xFFF4D35E).withOpacity(0.2),
                         textColor: const Color(0xFFF4D35E),
                         icon: Icons.folder_open,

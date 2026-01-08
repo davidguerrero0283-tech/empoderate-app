@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -170,7 +171,7 @@ class _SalarioScreenState extends State<SalarioScreen> {
                 title: 'Calculadora Salarial',
                 categoryName: 'RECURSOS HUMANOS',
                 icon: Icons.monetization_on,
-                onBackPressed: () => Navigator.pop(context),
+                onBackPressed: () => context.pop(),
               ),
 
               Padding(
@@ -241,7 +242,7 @@ class _SalarioScreenState extends State<SalarioScreen> {
                               const SizedBox(height: 8),
                               NeonButton(
                                 text: '📁 Ver Archivo HR',
-                                onTap: () => Navigator.pushNamed(context, '/hr_archive', arguments: _selectedWorkerId),
+                                onTap: () => context.push('/hr_archive?workerId=$_selectedWorkerId'),
                                 color: const Color(0xFFF4D35E).withOpacity(0.2),
                                 textColor: const Color(0xFFF4D35E),
                                 icon: Icons.folder_open,

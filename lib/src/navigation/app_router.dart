@@ -14,6 +14,7 @@ import '../screens/tools_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/auth_screen.dart';
 import '../screens/not_found_screen.dart';
+import '../screens/under_construction_screen.dart'; // NEW
 
 // Screens - Main Sections
 import '../screens/human_resources_screen.dart';
@@ -448,6 +449,15 @@ class AppRouter {
         builder: (context, state) {
           final title = state.uri.queryParameters['title'] ?? 'Próximamente';
           return ComingSoonScreen(title: title);
+        },
+      ),
+      GoRoute(
+        path: '/under_construction',
+        name: 'under_construction',
+        builder: (context, state) {
+          final title = state.uri.queryParameters['title'] ?? 'Módulo';
+          final route = state.uri.queryParameters['route'] ?? 'N/A';
+          return UnderConstructionScreen(title: title, route: route);
         },
       ),
       GoRoute(

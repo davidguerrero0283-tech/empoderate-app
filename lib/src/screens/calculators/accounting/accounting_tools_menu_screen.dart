@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:proyecto_empoderate/src/config/accounting_config.dart';
 import 'package:proyecto_empoderate/src/components/premium_scaffold.dart';
@@ -57,7 +58,29 @@ class AccountingToolsMenuScreen extends StatelessWidget {
       neonColor: tool.color,
       // Use a consistent dark glass background
       backgroundColor: const Color(0xFF151C2B), 
-      onTap: () => Navigator.pushNamed(context, tool.route),
+      onTap: () => _safePush(context, tool.route, tool.title),
     );
+  }
+
+  /// Navegación segura que valida la existencia de la ruta en GoRouter
+  void _safePush(BuildContext context, String route, String title) {
+    try {
+      final GoRouter router = GoRouter.of(context);
+      final bool routeExists = router.configuration.routes.any((r) {
+        if (r is GoRoute) {
+          if (r.path == route) return true;
+          if (route.startsWith(r.path) && r.path != '/') return true;
+        }
+        return false;
+      });
+
+      if (routeExists) {
+        context.push(route);
+      } else {
+        context.push('/under_construction?title=$title&route=$route');
+      }
+    } catch (e) {
+      context.push('/under_construction?title=$title&route=$route');
+    }
   }
 }

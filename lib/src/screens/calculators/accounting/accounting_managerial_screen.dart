@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:proyecto_empoderate/src/components/premium_scaffold.dart';
 import 'package:proyecto_empoderate/src/components/neon_widgets.dart';
@@ -262,8 +263,29 @@ class AccountingManagerialScreen extends StatelessWidget {
       side: BorderSide(color: const Color(0xFFD4AF37).withOpacity(0.3)),
       avatar: const Icon(Icons.calculate_outlined, color: Color(0xFFD4AF37), size: 16),
       label: Text(tool.name, style: GoogleFonts.outfit(color: Colors.white, fontSize: 12)),
-      onPressed: () => Navigator.pushNamed(context, tool.route),
+      onPressed: () => _safePush(context, tool.route, tool.name),
     );
+  }
+
+  void _safePush(BuildContext context, String route, String title) {
+    try {
+      final GoRouter router = GoRouter.of(context);
+      final bool routeExists = router.configuration.routes.any((r) {
+        if (r is GoRoute) {
+          if (r.path == route) return true;
+          if (route.startsWith(r.path) && r.path != '/') return true;
+        }
+        return false;
+      });
+
+      if (routeExists) {
+        context.push(route);
+      } else {
+        context.push('/under_construction?title=$title&route=$route');
+      }
+    } catch (e) {
+      context.push('/under_construction?title=$title&route=$route');
+    }
   }
 
   Widget _buildActionChip(BuildContext context, _ERPAction action) {
