@@ -4,6 +4,7 @@ import '../components/premium_scaffold.dart';
 import '../components/neon_widgets.dart';
 import '../components/visibility_builder.dart';
 import '../navigation/app_routes.dart';
+import '../navigation/app_router.dart'; // For rootNavigatorKey
 import 'package:go_router/go_router.dart';
 import '../features/analytics/analytics_service.dart';
 import '../features/admin/visibility/visibility_service.dart';
@@ -239,8 +240,6 @@ class _HomeScreenState extends State<HomeScreen> {
         const PwaInstallButton(), 
         
         // ADMIN FLOATING BUTTON (Positioned manually to ensure visibility)
-        // TEMPORARILY DISABLED - Causing layout crash
-        /*
         Positioned(
           bottom: 20,
           right: 20,
@@ -253,13 +252,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: FloatingActionButton(
               heroTag: 'admin_fab',
-              onPressed: () => context.push(AppRoutes.adminDashboard),
+             onPressed: () {
+                // Use rootNavigatorKey for context-independent navigation
+                final navContext = rootNavigatorKey.currentContext;
+                if (navContext != null) {
+                  // Route doesn't exist yet in go_router, redirect to Under Construction
+                  navContext.push(
+                    '/under_construction?title=${Uri.encodeComponent('Administrador')}&route=${Uri.encodeComponent(AppRoutes.adminDashboard)}'
+                  );
+                }
+              },
               backgroundColor: const Color(0xFFD4AF37),
               child: const Icon(Icons.shield, color: Color(0xFF001220), size: 28),
             ),
           ),
         ),
-        */ 
       ],
     ); 
   }
