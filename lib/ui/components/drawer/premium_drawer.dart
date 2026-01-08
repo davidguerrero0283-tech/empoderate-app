@@ -4,6 +4,7 @@ import '../../theme/empoderate_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui'; // For BackdropFilter
 import '../../../../src/navigation/app_routes.dart';
+import '../../../../src/navigation/app_router.dart'; // For rootNavigatorKey
 import '../../../../src/components/neon_widgets.dart'; // Using global neon constants
 import '../../../../src/components/visibility_builder.dart';
 import '../../../../src/services/user_profile_service.dart';
@@ -729,24 +730,48 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             }
-            // Navigate with go_router
-            // Use go for root-level routes (replaces stack), push for details (adds to stack)
-            final isRootRoute = !route.contains('/') || route == '/' || 
-                               route == AppRoutes.root ||
-                               route == AppRoutes.home ||
-                               route == AppRoutes.tools ||
-                               route == AppRoutes.humanResources ||
-                               route == AppRoutes.marketing ||
-                               route == AppRoutes.accounting ||
-                               route == AppRoutes.aiHub ||
-                               route == AppRoutes.tramites ||
-                               route == AppRoutes.settings;
             
-            if (isRootRoute) {
-              context.go(route);
-            } else {
-              context.push(route);
-            }
+            // Small delay to allow drawer to close smoothly
+            Future.delayed(const Duration(milliseconds: 150), () {
+              try {
+                // Define ShellRoute paths - these use context.go (replace navigation stack)
+                final shellRoutePaths = {
+                  '/',
+                  '/tools',
+                  '/boveda_digital',
+                  '/settings',
+                  '/library',
+                };
+                
+                // Check if this is a ShellRoute path
+                final isShellRoute = shellRoutePaths.contains(route);
+                
+                // Use rootNavigatorKey to get router context (drawer context doesn't have router)
+                final navigatorContext = rootNavigatorKey.currentContext;
+                if (navigatorContext != null) {
+                  if (isShellRoute) {
+                    // Use context.go for ShellRoute paths (keeps bottom nav)
+                    navigatorContext.go(route);
+                  } else {
+                    // Use context.push for standard routes (shows back button)
+                    navigatorContext.push(route);
+                  }
+                } else {
+                  debugPrint('⚠️ Navigator context is null, cannot navigate to $route');
+                }
+              } catch (e) {
+                // Fallback: try with root context
+                debugPrint('⚠️ Navigation error to $route: $e');
+                final navigatorContext = rootNavigatorKey.currentContext;
+                if (navigatorContext != null) {
+                  try {
+                    navigatorContext.push(route);
+                  } catch (e2) {
+                    navigatorContext.push('/under_construction?title=${Uri.encodeComponent(title)}&route=${Uri.encodeComponent(route)}');
+                  }
+                }
+              }
+            });
           }
         },
         hoverColor: color.withOpacity(0.1),
