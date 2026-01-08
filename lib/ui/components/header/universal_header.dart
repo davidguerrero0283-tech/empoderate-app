@@ -1,6 +1,7 @@
 // Universal Header - Global Refactor Phase 2
 import 'package:flutter/material.dart';
 import 'dart:ui' as dart_ui; // For BackdropFilter
+import 'package:go_router/go_router.dart';
 import '../../../src/navigation/app_routes.dart';
 import '../../theme/color_palette.dart';
 import '../../theme/empoderate_theme.dart';
@@ -99,7 +100,10 @@ PreferredSizeWidget buildUniversalHeader(BuildContext context, {
 
     // CENTER: Title / Branding
     title: showBranding
-      ? const _HoverTitle()
+      ? InkWell(
+          onTap: () => context.go(AppRoutes.home),
+          child: const _HoverTitle(),
+        )
       : Text(
           title,
           style: isNeonTitle 
@@ -129,7 +133,7 @@ PreferredSizeWidget buildUniversalHeader(BuildContext context, {
         padding: const EdgeInsets.only(right: 12),
         child: _HoverIcon(
           icon: _buildPlanIcon(context),
-          onTap: () => Navigator.pushNamed(context, AppRoutes.premiumPlans),
+          onTap: () => context.push(AppRoutes.premiumPlans),
         ),
       ),
       
@@ -151,10 +155,12 @@ PreferredSizeWidget buildUniversalHeader(BuildContext context, {
             ),
             onTap: () {
               if (!isLoggedIn) {
-                final currentRoute = ModalRoute.of(context)?.settings.name;
+                final currentRoute = GoRouterState.of(context).uri.path;
                 if (currentRoute != AppRoutes.login && currentRoute != AppRoutes.register) {
-                  Navigator.pushNamed(context, AppRoutes.login);
+                  context.push(AppRoutes.login);
                 }
+              } else {
+                context.push(AppRoutes.profile);
               }
             },
           ),

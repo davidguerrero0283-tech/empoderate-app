@@ -5,7 +5,6 @@ import '../navigation/app_routes.dart';
 
 class SideMenuDrawer extends StatelessWidget {
   const SideMenuDrawer({Key? key}) : super(key: key);
-  // Force recompile
 
   @override
   Widget build(BuildContext context) {
@@ -19,26 +18,26 @@ class SideMenuDrawer extends StatelessWidget {
             _buildDrawerHeader(context),
             const SizedBox(height: 16),
             
-            _buildDrawerItem(context, Icons.dashboard, 'Inicio', '/home'),
+            _buildDrawerItem(context, Icons.dashboard, 'Inicio', AppRoutes.home, useGo: true),
             _buildDrawerItem(context, Icons.flag, 'La Ruta al Éxito', AppRoutes.laRutaAlExito),
             _buildDrawerItem(context, Icons.business, 'Perfil del Negocio', AppRoutes.businessProfile),
-            _buildDrawerItem(context, Icons.settings, 'Ajustes', AppRoutes.settings),
+            _buildDrawerItem(context, Icons.settings, 'Ajustes', AppRoutes.settings, useGo: true),
             
             const Divider(color: Colors.white12, height: 32),
             
             _buildSectionTitle('Herramientas'),
-            _buildDrawerItem(context, Icons.build, 'Herramientas', AppRoutes.tools),
+            _buildDrawerItem(context, Icons.build, 'Herramientas', AppRoutes.tools, useGo: true),
             _buildDrawerItem(context, Icons.psychology, 'Consultor IA', AppRoutes.aiChat),
-            _buildDrawerItem(context, Icons.receipt_long, 'Bóveda Digital', AppRoutes.bovedaDigital),
+            _buildDrawerItem(context, Icons.receipt_long, 'Bóveda Digital', AppRoutes.bovedaDigital, useGo: true),
             
             const Divider(color: Colors.white12, height: 32),
 
             _buildSectionTitle('Legales'),
-            _buildDrawerItem(context, Icons.gavel, 'Aviso Legal', AppRoutes.legal), // Assuming legal screen wrapper or direct
-            _buildDrawerItem(context, Icons.privacy_tip, 'Privacidad', AppRoutes.legal), // Point to legal hub for now
+            _buildDrawerItem(context, Icons.gavel, 'Aviso Legal', AppRoutes.legal), 
+            _buildDrawerItem(context, Icons.privacy_tip, 'Privacidad', AppRoutes.legal), 
             
             const SizedBox(height: 16),
-             _buildDrawerItem(context, Icons.logout, 'Cerrar Sesión', '/home'), 
+             _buildDrawerItem(context, Icons.logout, 'Cerrar Sesión', AppRoutes.home, useGo: true), 
           ],
         ),
       ),
@@ -104,7 +103,7 @@ class SideMenuDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, String route) {
+  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, String route, {bool useGo = false}) {
     return ListTile(
       leading: Icon(icon, color: const Color(0xFFD4AF37), size: 22),
       title: Text(
@@ -115,8 +114,19 @@ class SideMenuDrawer extends StatelessWidget {
         ),
       ),
       onTap: () {
-        Navigator.pop(context); // Close drawer
-        context.push(route); // Use go_router
+        context.pop(); // Close drawer first
+        
+        // Navigation logic
+        if (useGo) {
+          context.go(route);
+        } else {
+          try {
+            context.push(route);
+          } catch (e) {
+            // Fallback to Under Construction if route fails
+            context.push('/under_construction?title=${Uri.encodeComponent(title)}&route=${Uri.encodeComponent(route)}');
+          }
+        }
       },
       hoverColor: const Color(0xFFD4AF37).withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
