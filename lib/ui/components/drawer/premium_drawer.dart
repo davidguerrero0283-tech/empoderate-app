@@ -464,7 +464,7 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
                       context, 
                       icon: Icons.admin_panel_settings, 
                       title: 'Administrador', 
-                      route: AppRoutes.admin,
+                      route: AppRoutes.adminDashboard,
                       color: const Color(0xFFD4AF37) 
                     ),
                     _buildMenuItem(
