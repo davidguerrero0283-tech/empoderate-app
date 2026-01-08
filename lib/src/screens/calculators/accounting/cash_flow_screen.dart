@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:proyecto_empoderate/ui/theme/empoderate_theme.dart';
-import 'package:proyecto_empoderate/src/widgets/feature_intro_screen.dart';
 import '../../../components/premium_scaffold.dart';
 import '../../../components/calculator_info_panel.dart';
 
@@ -15,7 +14,6 @@ class CashFlowScreen extends StatefulWidget {
 }
 
 class _CashFlowScreenState extends State<CashFlowScreen> {
-  bool _showIntro = true;
   // Inputs
   final TextEditingController _incomeCtrl = TextEditingController();
   final TextEditingController _receivablesCtrl = TextEditingController();
@@ -134,35 +132,10 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                 if (_liquidityStatus != 'NEUTRAL')
                   _buildResultCard(),
 
-                 const SizedBox(height: 80),
-              ],
+                ],
             ),
           ),
           ),
-
-          // --- INTRO OVERLAY ---
-          if (_showIntro)
-            Positioned.fill(
-              child: FeatureIntroScreen(
-                key: const ValueKey('IntroOverlay'),
-                title: 'FLUJO DE CAJA',
-                subTitle: '¿Tienes suficiente efectivo para operar este mes? El flujo de caja te dice la verdad.',
-                heroEmoji: '💧',
-                primaryColor: const Color(0xFF4DD0E1), // Cyan
-                features: const [
-                  IntroFeatureItem(Icons.water_drop, 'Liquidez'),
-                  IntroFeatureItem(Icons.account_balance_wallet, 'Saldo'),
-                  IntroFeatureItem(Icons.warning_amber, 'Alertas'),
-                ],
-                processSteps: const [
-                  IntroStepItem('1. Entradas', 'Ventas cobradas en efectivo.'),
-                  IntroStepItem('2. Salidas', 'Gastos fijos y variables.'),
-                  IntroStepItem('3. Semáforo', 'Verde, amarillo o rojo.'),
-                ],
-                proTip: 'Ventas ≠ Efectivo. Si vendiste a crédito, ese dinero aún no cuenta.',
-                onDismiss: () => setState(() => _showIntro = false),
-              ),
-            ),
         ],
       ),
     );

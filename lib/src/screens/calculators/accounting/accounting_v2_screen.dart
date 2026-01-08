@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:proyecto_empoderate/src/components/premium_scaffold.dart';
 import 'package:proyecto_empoderate/src/components/neon_widgets.dart';
 import 'package:proyecto_empoderate/src/features/hr/compliance/hr_compliance_service.dart';
-import 'package:proyecto_empoderate/src/widgets/feature_intro_screen.dart';
 
 import 'package:proyecto_empoderate/src/config/accounting_config.dart';
 import '../../../navigation/app_routes.dart';
@@ -21,7 +20,6 @@ class AccountingV2Screen extends StatefulWidget {
 
 class _AccountingV2ScreenState extends State<AccountingV2Screen> {
   final HrComplianceService _hrService = HrComplianceService();
-  bool _showIntro = true;
 
   // Sorted tools
   late final List<AccountingToolConfig> _mainTools;
@@ -123,37 +121,10 @@ class _AccountingV2ScreenState extends State<AccountingV2Screen> {
                     ),
                   ),
                 ),
-                _buildExtraToolsGrid(),
               ],
             ),
           ),
         ),
-
-          // --- INTRO OVERLAY ---
-          if (_showIntro)
-            Positioned.fill(
-              child: FeatureIntroScreen(
-                key: const ValueKey('IntroOverlay'),
-                title: 'CONTROL FINANCIERO',
-                subTitle: 'Toma el control total de tus números. Costos, márgenes, presupuestos y flujo de caja en un solo lugar.',
-                heroEmoji: '📊',
-                primaryColor: const Color(0xFFD4AF37), // Gold
-                features: const [
-                  IntroFeatureItem(Icons.business, 'Costos'),
-                  IntroFeatureItem(Icons.balance, 'Equilibrio'),
-                  IntroFeatureItem(Icons.pie_chart, 'Presupuesto'),
-                  IntroFeatureItem(Icons.waves, 'Flujo'),
-                ],
-                processSteps: const [
-                  IntroStepItem('1. Costos', 'Conoce cuánto te cuesta operar.'),
-                  IntroStepItem('2. Equilibrio', 'Calcula tu punto de no pérdida.'),
-                  IntroStepItem('3. Margen', 'Define precios rentables.'),
-                  IntroStepItem('4. Presupuesto', 'Distribuye tu dinero.'),
-                ],
-                proTip: 'Sigue el orden sugerido para construir un entendimiento sólido de tus finanzas.',
-                onDismiss: () => setState(() => _showIntro = false),
-              ),
-            ),
         ],
       ),
     );

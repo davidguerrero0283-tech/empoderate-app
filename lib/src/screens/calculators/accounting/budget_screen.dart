@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proyecto_empoderate/ui/theme/empoderate_theme.dart';
-import 'package:proyecto_empoderate/src/widgets/feature_intro_screen.dart';
 import '../../../components/premium_scaffold.dart';
 import '../../../components/calculator_info_panel.dart';
 import '../../../features/accounting/accounting_repository.dart';
@@ -17,7 +16,6 @@ class BudgetScreen extends StatefulWidget {
 }
 
 class _BudgetScreenState extends State<BudgetScreen> {
-  bool _showIntro = true;
   bool _isBusinessMode = true;
 
   final TextEditingController _incomeCtrl = TextEditingController();
@@ -173,35 +171,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 const SizedBox(height: 32),
                 if (_calculated) _buildResults(),
 
-                const SizedBox(height: 80),
               ],
             ),
           ),
           ),
-
-          // --- INTRO OVERLAY ---
-          if (_showIntro)
-            Positioned.fill(
-              child: FeatureIntroScreen(
-                key: const ValueKey('IntroOverlay'),
-                title: 'PRESUPUESTO 50/30/20',
-                subTitle: 'Distribuye tus ingresos de forma inteligente: necesidades, deseos y ahorro.',
-                heroEmoji: '📊',
-                primaryColor: const Color(0xFFAED581), // Green
-                features: const [
-                  IntroFeatureItem(Icons.pie_chart, 'Distribución'),
-                  IntroFeatureItem(Icons.savings, 'Ahorro'),
-                  IntroFeatureItem(Icons.trending_up, 'Utilidad'),
-                ],
-                processSteps: const [
-                  IntroStepItem('1. Ingresos', 'Ingresa tu ingreso mensual.'),
-                  IntroStepItem('2. Distribuye', 'Asigna a cada categoría.'),
-                  IntroStepItem('3. Analiza', 'Revisa tu gráfico de gastos.'),
-                ],
-                proTip: 'La regla 50/30/20: 50% necesidades, 30% deseos, 20% ahorro.',
-                onDismiss: () => setState(() => _showIntro = false),
-              ),
-            ),
         ],
       ),
     );
