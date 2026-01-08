@@ -103,19 +103,6 @@ class PremiumHeader extends StatelessWidget {
 
       // Right Actions: Plans + User/Plan Icon
       actions: [
-        // Admin Button (Restored)
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: const Icon(Icons.admin_panel_settings, color: Color(0xFFF5D98A), size: 24),
-            tooltip: 'Administrador',
-            onPressed: () {
-              // Try to navigate to admin or fallback to coming soon
-              context.push('/coming-soon?title=Administrador');
-            },
-          ),
-        ),
-
         // Home Button (Inicio)
         Padding(
           padding: const EdgeInsets.only(right: 8),
