@@ -27,7 +27,6 @@ class _LaborComplianceScreenState extends State<LaborComplianceScreen> {
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es_ES');
   DateTime _currentDate = DateTime.now();
 
-  @override
   bool _showIntro = true;
 
   @override
