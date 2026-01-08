@@ -542,6 +542,13 @@ class AppRouter {
         builder: (context, state) => const AccountingClassroomScreen(),
       ),
 
+      // ========== HUMAN RESOURCES ==========
+      GoRoute(
+        path: '/rrhh/cumplimiento',
+        name: 'labor_compliance',
+        builder: (context, state) => const LaborComplianceScreen(),
+      ),
+
       // ========== MARKETING ==========
       GoRoute(
         path: '/marketing',

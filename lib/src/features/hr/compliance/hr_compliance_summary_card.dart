@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../components/neon_widgets.dart';
 import '../../../navigation/app_routes.dart';
 import 'hr_compliance_service.dart';
@@ -118,10 +119,7 @@ class _HrComplianceSummaryCardState extends State<HrComplianceSummaryCard> {
                     text: 'GESTIONAR',
                     onTap: () async {
                       // Navigate and reload stats when returning
-                      await Navigator.pushNamed(
-                        context, 
-                        '/rrhh/cumplimiento',
-                      );
+                      await context.push('/rrhh/cumplimiento');
                       _loadStats();
                     },
                     color: const Color(0xFFFF4081),
