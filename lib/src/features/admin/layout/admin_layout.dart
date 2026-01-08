@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../ui/theme/empoderate_theme.dart';
 import '../../../screens/admin/admin_dashboard_screen.dart';
 import '../../../navigation/app_routes.dart';
@@ -190,7 +191,10 @@ class _AdminLayoutState extends State<AdminLayout> {
       message: _isSidebarCollapsed ? title : '',
       child: InkWell(
         onTap: () {
-          if (!isActive) Navigator.pushReplacementNamed(context, route);
+          if (!isActive) {
+            // Use go_router for navigation
+            context.go(route);
+          }
         },
         child: Container(
           height: 50,
@@ -272,7 +276,7 @@ class _AdminLayoutState extends State<AdminLayout> {
 
            // Create button to go back to App
             TextButton.icon(
-              onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
+              onPressed: () => context.go(AppRoutes.home),
               icon: const Icon(Icons.exit_to_app, size: 18),
               label: const Text('Volver al App'),
               style: TextButton.styleFrom(foregroundColor: Colors.white54),

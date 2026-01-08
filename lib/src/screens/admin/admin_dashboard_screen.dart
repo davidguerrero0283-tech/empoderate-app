@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../components/neon_widgets.dart';
@@ -17,13 +18,6 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // Mock Data for Dashboard
   bool _pwaReady = false;
-  
-  void _navigateTo(Widget screen) {
-    Navigator.push(
-      context, 
-      MaterialPageRoute(builder: (context) => screen)
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +83,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               icon: Icons.people_outline,
               title: 'Gestión de Usuarios',
               subtitle: 'Administrar roles, accesos y perfiles.',
-              onTap: () => _navigateTo(const AdminUsersScreen()),
+              onTap: () => context.go('/admin/users'),
               iconColor: const Color(0xFF00E5FF),
             ),
             
@@ -97,7 +91,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               icon: Icons.library_books_outlined,
               title: 'Gestor de Contenido (CMS)',
               subtitle: 'Blog, Cursos y Recursos.',
-              onTap: () => _navigateTo(const AdminContentScreen()),
+              onTap: () => context.go('/admin/content'),
               iconColor: const Color(0xFFD4AF37),
             ),
 
