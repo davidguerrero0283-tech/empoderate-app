@@ -459,6 +459,14 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
                       route: AppRoutes.settings,
                       color: Colors.white70 
                     ),
+                    // Admin access - moved from floating button to drawer
+                    _buildMenuItem(
+                      context, 
+                      icon: Icons.admin_panel_settings, 
+                      title: 'Administrador', 
+                      route: '/under_construction?title=${Uri.encodeComponent('Administrador')}&route=${Uri.encodeComponent('/admin_dashboard')}',
+                      color: const Color(0xFFD4AF37) 
+                    ),
                     _buildMenuItem(
                       context, 
                       icon: Icons.diamond_outlined, 

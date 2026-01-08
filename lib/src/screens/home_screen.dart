@@ -239,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
         const PwaInstallButton(), 
         
-        // ADMIN FLOATING BUTTON (Positioned manually to ensure visibility)
+        // AI AVATAR BUTTON - Quick access to AI Chat
         Positioned(
           bottom: 20,
           right: 20,
@@ -247,23 +247,20 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
-                 BoxShadow(color: const Color(0xFFD4AF37).withOpacity(0.6), blurRadius: 16, spreadRadius: 2),
+                 BoxShadow(color: const Color(0xFF00E5FF).withOpacity(0.6), blurRadius: 16, spreadRadius: 2),
               ],
             ),
             child: FloatingActionButton(
-              heroTag: 'admin_fab',
+              heroTag: 'ai_avatar_fab',
              onPressed: () {
                 // Use rootNavigatorKey for context-independent navigation
                 final navContext = rootNavigatorKey.currentContext;
                 if (navContext != null) {
-                  // Route doesn't exist yet in go_router, redirect to Under Construction
-                  navContext.push(
-                    '/under_construction?title=${Uri.encodeComponent('Administrador')}&route=${Uri.encodeComponent(AppRoutes.adminDashboard)}'
-                  );
+                  navContext.push(AppRoutes.aiHub);
                 }
               },
-              backgroundColor: const Color(0xFFD4AF37),
-              child: const Icon(Icons.shield, color: Color(0xFF001220), size: 28),
+              backgroundColor: const Color(0xFF00E5FF), // Cyan for AI
+              child: const Icon(Icons.smart_toy, color: Colors.black, size: 28),
             ),
           ),
         ),
