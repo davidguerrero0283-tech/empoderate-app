@@ -91,6 +91,82 @@ class _AccountingV2ScreenState extends State<AccountingV2Screen> {
                   ),
                 ),
 
+                // --- AULA PRO (Classroom Access) ---
+                Container(
+                  margin: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFD4AF37).withOpacity(0.2),
+                        const Color(0xFFD4AF37).withOpacity(0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.5), width: 1.5),
+                  ),
+                  child: InkWell(
+                    onTap: () => context.push('/accounting/classroom'),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.school_outlined, color: Color(0xFFD4AF37), size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    '🎓 Aula: Control y Decisiones',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFFD4AF37),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD4AF37),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'PRO',
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.black,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Aprende con guías, ejemplos y practica en el laboratorio',
+                                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, color: Color(0xFFD4AF37), size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+
                 // --- SEQUENTIAL TOOLS (MAIN PATH) ---
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
