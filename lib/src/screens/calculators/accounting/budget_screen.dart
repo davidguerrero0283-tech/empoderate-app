@@ -171,6 +171,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 const SizedBox(height: 32),
                 if (_calculated) _buildResults(),
 
+                const SizedBox(height: 80),
               ],
             ),
           ),

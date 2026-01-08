@@ -121,6 +121,7 @@ class _AccountingV2ScreenState extends State<AccountingV2Screen> {
                     ),
                   ),
                 ),
+                _buildExtraToolsGrid(),
               ],
             ),
           ),

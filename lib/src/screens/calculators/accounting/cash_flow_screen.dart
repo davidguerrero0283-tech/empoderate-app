@@ -132,6 +132,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                 if (_liquidityStatus != 'NEUTRAL')
                   _buildResultCard(),
 
+                const SizedBox(height: 80),
                 ],
             ),
           ),
