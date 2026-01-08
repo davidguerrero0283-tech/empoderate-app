@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../navigation/app_routes.dart';
+import '../features/admin/visibility/visibility_builder.dart';
 
 class SideMenuDrawer extends StatelessWidget {
   const SideMenuDrawer({Key? key}) : super(key: key);
@@ -28,8 +29,14 @@ class SideMenuDrawer extends StatelessWidget {
             
             _buildSectionTitle('Herramientas'),
             _buildDrawerItem(context, Icons.build, 'Herramientas', AppRoutes.tools),
-            _buildDrawerItem(context, Icons.psychology, 'Consultor IA', AppRoutes.aiChat),
-            _buildDrawerItem(context, Icons.receipt_long, 'Bóveda Digital', AppRoutes.bovedaDigital),
+            VisibilityBuilder(
+              id: 'tools.ai_chat',
+              child: _buildDrawerItem(context, Icons.psychology, 'Consultor IA', AppRoutes.aiChat),
+            ),
+            VisibilityBuilder(
+              id: 'tools.boveda', 
+              child: _buildDrawerItem(context, Icons.receipt_long, 'Bóveda Digital', AppRoutes.bovedaDigital),
+            ),
             
             const Divider(color: Colors.white12, height: 32),
 

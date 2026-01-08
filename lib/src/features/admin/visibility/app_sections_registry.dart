@@ -129,6 +129,13 @@ class AppSectionsRegistry {
       group: groupAdvanced,
       route: '/auditoria', // AppRoutes.auditoria
     ),
+    AppSection(
+      id: 'tools.boveda',
+      title: 'Bóveda Digital',
+      description: 'Gestión de Documentos',
+      group: groupAdvanced,
+      route: '/boveda', // AppRoutes.bovedaDigital
+    ),
 
   ];
 

@@ -119,6 +119,8 @@ import '../screens/admin/visibility/section_visibility_screen.dart';
 import '../screens/admin/admin_analytics_screen.dart';
 import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_content_screen.dart';
+import '../screens/admin/blog/post_editor_screen.dart'; // NEW
+import '../screens/admin/blog/external_blog_screen.dart'; // NEW
 import '../screens/admin/admin_audit_screen.dart';
 import '../screens/admin/admin_system_screen.dart';
 import '../screens/admin/admin_ai_screen.dart';
@@ -1079,14 +1081,28 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: '/admin_blog',
+        path: '/admin/blog',
         name: 'admin_blog',
-        builder: (context, state) => const AdminBlogScreen(),
+        builder: (context, state) => const AdminLayout(
+          currentRoute: '/admin/blog',
+          child: ExternalBlogScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin_blog_form',
         name: 'admin_blog_form',
         builder: (context, state) => const AdminBlogFormScreen(),
+      ),
+      GoRoute(
+        path: '/admin/content/editor',
+        name: 'admin_blog_editor',
+        builder: (context, state) {
+           final id = state.uri.queryParameters['id'];
+           return AdminLayout(
+              currentRoute: '/admin/content', // Keep sidebar highlighted on content
+              child: PostEditorScreen(draftId: id),
+           );
+        },
       ),
     ],
   );

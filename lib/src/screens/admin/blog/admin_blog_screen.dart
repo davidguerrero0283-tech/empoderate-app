@@ -101,7 +101,8 @@ class _AdminBlogScreenState extends State<AdminBlogScreen> {
       usePadding: false,
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await Navigator.pushNamed(context, AppRoutes.adminBlogForm);
+        // await Navigator.pushNamed(context, AppRoutes.adminBlogForm);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use el nuevo Gestor de Contenido')));
           _refresh();
         },
         backgroundColor: const Color(0xFFD4AF37),
@@ -342,7 +343,8 @@ class _AdminBlogScreenState extends State<AdminBlogScreen> {
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blueAccent),
                 onPressed: () async {
-                   await Navigator.pushNamed(context, AppRoutes.adminBlogForm, arguments: article);
+                  //  await Navigator.pushNamed(context, AppRoutes.adminBlogForm, arguments: article);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use el nuevo Gestor de Contenido')));
                    _refresh();
                 },
                 tooltip: 'Editar',

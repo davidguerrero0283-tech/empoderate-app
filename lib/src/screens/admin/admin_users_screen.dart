@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../components/neon_widgets.dart';
 import '../../components/how_to_use_card.dart';
+import '../../features/admin/users/user_service.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({Key? key}) : super(key: key);
@@ -11,55 +13,56 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
-  // Mock Data
-  final List<Map<String, dynamic>> _users = [
-    {'id': 1, 'name': 'Juan Pérez', 'email': 'juan@empoderate.com', 'role': 'Admin', 'status': 'Active'},
-    {'id': 2, 'name': 'Maria Lopez', 'email': 'maria@gmail.com', 'role': 'User', 'status': 'Active'},
-    {'id': 3, 'name': 'Carlos Ruiz', 'email': 'carlos@tech.com', 'role': 'Pro', 'status': 'Inactive'},
-  ];
-
+  final UserService _service = UserService.instance;
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoading = true;
   String _searchQuery = '';
 
-  void _addUser() {
-    showDialog(
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    setState(() => _isLoading = true);
+    await _service.init();
+    setState(() {
+      _users = _service.getAllUsers();
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _addUser() async {
+    await showDialog(
       context: context,
       builder: (ctx) => _UserDialog(
         isEdit: false,
-        onSave: (data) {
-          setState(() {
-            _users.add({
-              'id': _users.length + 1,
-              ...data,
-              'status': 'Active'
-            });
-          });
+        onSave: (data) async {
+          await _service.addUser(data);
+          _loadUsers();
         },
       ),
     );
   }
 
-  void _editUser(Map<String, dynamic> user) {
-    showDialog(
+  Future<void> _editUser(Map<String, dynamic> user) async {
+    await showDialog(
       context: context,
       builder: (ctx) => _UserDialog(
         isEdit: true,
         initialData: user,
-        onSave: (data) {
-          setState(() {
-            final index = _users.indexWhere((u) => u['id'] == user['id']);
-            if (index != -1) {
-              _users[index] = {..._users[index], ...data};
-            }
-          });
+        onSave: (data) async {
+          await _service.updateUser({...user, ...data});
+          _loadUsers();
         },
       ),
     );
   }
 
-  void _deleteUser(int id) {
-    setState(() {
-      _users.removeWhere((u) => u['id'] == id);
-    });
+  Future<void> _deleteUser(int id) async {
+    await _service.deleteUser(id);
+    _loadUsers();
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Usuario eliminado')));
   }
 
@@ -74,10 +77,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF001220),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
         title: Text('Gestión de Usuarios', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -107,9 +113,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
             // User List
             Expanded(
-              child: filteredUsers.isEmpty 
-              ? Center(child: Text('No se encontraron usuarios', style: GoogleFonts.outfit(color: Colors.white54)))
-              : ListView.builder(
+              child: _isLoading 
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF00E5FF)))
+              : filteredUsers.isEmpty 
+                  ? Center(child: Text('No se encontraron usuarios', style: GoogleFonts.outfit(color: Colors.white54)))
+                  : ListView.builder(
                   itemCount: filteredUsers.length,
                   itemBuilder: (context, index) {
                     final user = filteredUsers[index];

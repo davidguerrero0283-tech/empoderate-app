@@ -29,6 +29,7 @@ import '../sbot/sbot_home_screen.dart';
 import '../sbot/sbot_question_screen.dart';
 import '../sbot/sbot_result_screen.dart';
 import '../sbot/sbot_history_screen.dart';
+import '../screens/admin/config/global_config_screen.dart';
 import '../screens/checklist/checklist_hub_screen.dart';
 import '../features/checklist/screens/checklist_rubro_selection_screen.dart';
 import '../features/checklist/screens/checklist_rubro_detail_screen.dart';
@@ -127,8 +128,6 @@ class AppRoutes {
   static const String admin = '/admin'; // V2 Entry Point
   static const String home_screen_widget = '/home_only'; 
   static const String adminDashboard = '/admin_dashboard';
-  static const String adminBlog = '/admin_blog';
-  static const String adminBlogForm = '/admin_blog_form';
   static const String adminVisibility = '/admin_visibility';
 
   static const String adminAnalytics = '/admin/analytics';
@@ -138,6 +137,10 @@ class AppRoutes {
   static const String adminSystem = '/admin/system';
   static const String adminAi = '/admin/ai';
   static const String aiChat = '/ia/chat';
+  static const String adminBlog = '/admin/blog';
+  static const String adminConfig = '/admin/config';
+  static const String adminBlogEditor = '/admin/content/editor';
+  
   static const String tools = '/tools';
   static const String library = '/library';
   static const String profile = '/perfil';
@@ -256,7 +259,8 @@ class AppRoutes {
     'auth': (_) => const AuthScreen(isLoginMode: true),
 
     adminBlog: (_) => const AdminBlogScreen(),
-    adminBlogForm: (_) => const AdminBlogFormScreen(),
+    // adminBlogForm removed
+    adminConfig: (_) => const GlobalConfigScreen(),
     adminVisibility: (_) => const SectionVisibilityScreen(),
     aiChat: (_) => const ChatbotScreen(),
     tools: (_) => const ToolsScreen(),

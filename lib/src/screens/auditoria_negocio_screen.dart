@@ -3,127 +3,136 @@ import 'package:google_fonts/google_fonts.dart';
 import '../components/premium_scaffold.dart';
 import '../components/neon_widgets.dart';
 import '../components/calculator_info_panel.dart';
+import '../features/tools/auditoria/auditoria_service.dart';
 
-class AuditoriaNegocioScreen extends StatelessWidget {
+class AuditoriaNegocioScreen extends StatefulWidget {
   const AuditoriaNegocioScreen({Key? key}) : super(key: key);
+
+  @override
+  State<AuditoriaNegocioScreen> createState() => _AuditoriaNegocioScreenState();
+}
+
+class _AuditoriaNegocioScreenState extends State<AuditoriaNegocioScreen> {
+  final AuditoriaService _service = AuditoriaService.instance;
+  bool _isLoading = true;
+  List<BusinessArea> _areas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    await _service.init();
+    setState(() {
+      _areas = _service.getAreas();
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _updateArea(String name, String status, String priority) async {
+    await _service.updateArea(name, status, priority);
+    _loadData(); // Reload to refresh UI
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Auditoría actualizada')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return PremiumScaffold(
       title: 'AUDITORÍA',
       showBackButton: true,
-      // Use global defaults (no custom gradients)
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator(color: kNeonViolet))
+        : SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Info Panel
+                const CalculatorInfoPanel(configId: 'auditoria'),
+                const SizedBox(height: 24),
+                
+                const NeonSectionTitle(
+                  title: 'Estado del Negocio',
+                  color: kNeonViolet, 
+                ),
+                const SizedBox(height: 16),
+                
+                // Table
+                NeonTable(
+                  headers: const ['Área', 'Estado', 'Prioridad'],
+                  accentColor: kNeonViolet,
+                  rows: _areas.map((area) => [
+                    Text(area.name, style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold)),
+                    _buildStatusChip(area.status, _getStatusColor(area.status)),
+                    Text(area.priority, style: GoogleFonts.outfit(color: _getPriorityColor(area.priority), fontWeight: FontWeight.bold)),
+                  ]).toList(),
+                ),
 
-      
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-
-              // 1. Info Panel
-              const CalculatorInfoPanel(configId: 'auditoria'),
-              const SizedBox(height: 24),
-              
-              const NeonSectionTitle(
-                title: 'Estado del Negocio',
-                color: kNeonViolet, 
-              ),
-              const SizedBox(height: 16),
-              
-              // Table using NeonTable
-              NeonTable(
-                headers: const ['Área', 'Estado', 'Prioridad'],
-                accentColor: kNeonViolet,
-                rows: [
-                  [
-                    Text('Legal', style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold)),
-                    _buildStatusChip('En proceso', Colors.orange),
-                    Text('Alta', style: GoogleFonts.outfit(color: kNeonRed, fontWeight: FontWeight.bold)),
-                  ],
-                  [
-                    Text('Marketing', style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold)),
-                    _buildStatusChip('Sin iniciar', kNeonRed),
-                    Text('Media', style: GoogleFonts.outfit(color: Colors.white54)),
-                  ],
-                  [
-                    Text('Contabilidad', style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold)),
-                    _buildStatusChip('En proceso', Colors.orange),
-                    Text('Alta', style: GoogleFonts.outfit(color: kNeonRed, fontWeight: FontWeight.bold)),
-                  ],
-                  [
-                    Text('RRHH', style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold)),
-                    _buildStatusChip('Completado', kNeonGreen),
-                    Text('Baja', style: GoogleFonts.outfit(color: Colors.white54)),
-                  ],
-                  [
-                    Text('Operaciones', style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold)),
-                    _buildStatusChip('Completado', kNeonGreen),
-                    Text('Baja', style: GoogleFonts.outfit(color: Colors.white54)),
-                  ],
-                ],
-              ),
-
-              const SizedBox(height: 32),
-              // Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: NeonButton(
-                      text: 'Actualizar Datos',
-                      onTap: () => _showUpdateDialog(context),
-                      primary: true, 
-                      icon: Icons.edit_note,
-                      color: kNeonBlue,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: NeonButton(
-                      text: 'Ver Recomendaciones',
-                      onTap: () => _showRecommendationsSheet(context),
-                      primary: false, 
-                      icon: Icons.lightbulb,
-                      color: kNeonViolet,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              
-              // Next Steps Card
-              NeonWideCard(
-                borderColor: kNeonPurple,
-                isPremium: true, 
-                child: Column(
+                const SizedBox(height: 32),
+                // Buttons
+                Row(
                   children: [
-                    Icon(Icons.auto_awesome, color: kNeonPurple, size: 32, shadows: [BoxShadow(color: kNeonPurple.withOpacity(0.5), blurRadius: 10)]),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Próximamente: Auditoría IA en tiempo real',
-                      style: GoogleFonts.outfit(
-                        color: kNeonPurple,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    Expanded(
+                      child: NeonButton(
+                        text: 'Actualizar Datos',
+                        onTap: () => _showUpdateDialog(context),
+                        primary: true, 
+                        icon: Icons.edit_note,
+                        color: kNeonBlue,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Conectaremos tus datos de Bóveda y Calculadoras para darte un diagnóstico automático.',
-                      style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13),
-                      textAlign: TextAlign.center,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: NeonButton(
+                        text: 'Ver Recomendaciones',
+                        onTap: () => _showRecommendationsSheet(context),
+                        primary: false, 
+                        icon: Icons.lightbulb,
+                        color: kNeonViolet,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 80),
-            ],
+                const SizedBox(height: 32),
+                
+                // Next Steps Card
+                NeonWideCard(
+                  borderColor: kNeonPurple,
+                  isPremium: true, 
+                  child: Column(
+                    children: [
+                      Icon(Icons.auto_awesome, color: kNeonPurple, size: 32, shadows: [BoxShadow(color: kNeonPurple.withOpacity(0.5), blurRadius: 10)]),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Próximamente: Auditoría IA en tiempo real',
+                        style: GoogleFonts.outfit(
+                          color: kNeonPurple,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Conectaremos tus datos de Bóveda y Calculadoras para darte un diagnóstico automático.',
+                        style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
         ),
-      ),
     );
   }
 
@@ -137,25 +146,86 @@ class AuditoriaNegocioScreen extends StatelessWidget {
     );
   }
 
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Completado': return kNeonGreen;
+      case 'En proceso': return Colors.orange;
+      default: return kNeonRed;
+    }
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'Alta': return kNeonRed;
+      case 'Media': return Colors.orange;
+      default: return Colors.white54;
+    }
+  }
+
   void _showUpdateDialog(BuildContext context) {
+    String? selectedArea = _areas.first.name;
+    String selectedStatus = 'Sin iniciar';
+    String selectedPriority = 'Media';
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF0F1520),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: kNeonBlue)),
-        title: Text('Actualizar Auditoría', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Aquí podrás modificar manualmente el estado de cada área y agregar notas.', style: GoogleFonts.outfit(color: Colors.white70)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () { 
-              Navigator.pop(context); 
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Datos actualizados (Simulado)')));
-            }, 
-            style: ElevatedButton.styleFrom(backgroundColor: kNeonBlue),
-            child: const Text('Guardar', style: TextStyle(color: Colors.white))
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF0F1520),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: kNeonBlue)),
+          title: Text('Actualizar Auditoría', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedArea,
+                dropdownColor: const Color(0xFF0F1520),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'Área', labelStyle: TextStyle(color: Colors.white70)),
+                items: _areas.map((a) => DropdownMenuItem(value: a.name, child: Text(a.name))).toList(),
+                onChanged: (val) {
+                  setState(() {
+                    selectedArea = val;
+                    final area = _areas.firstWhere((a) => a.name == val);
+                    selectedStatus = area.status;
+                    selectedPriority = area.priority;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedStatus,
+                dropdownColor: const Color(0xFF0F1520),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'Estado', labelStyle: TextStyle(color: Colors.white70)),
+                items: ['Sin iniciar', 'En proceso', 'Completado'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                onChanged: (val) => setState(() => selectedStatus = val!),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedPriority,
+                dropdownColor: const Color(0xFF0F1520),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'Prioridad', labelStyle: TextStyle(color: Colors.white70)),
+                items: ['Alta', 'Media', 'Baja'].map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                onChanged: (val) => setState(() => selectedPriority = val!),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar', style: TextStyle(color: Colors.white54))),
+            ElevatedButton(
+              onPressed: () { 
+                if (selectedArea != null) {
+                  _updateArea(selectedArea!, selectedStatus, selectedPriority);
+                }
+                Navigator.pop(context); 
+              }, 
+              style: ElevatedButton.styleFrom(backgroundColor: kNeonBlue),
+              child: const Text('Guardar', style: TextStyle(color: Colors.white))
+            ),
+          ],
+        ),
       ),
     );
   }

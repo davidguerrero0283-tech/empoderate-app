@@ -7,6 +7,7 @@ import '../../components/premium_scaffold.dart';
 import '../../components/how_to_use_card.dart';
 import 'admin_users_screen.dart';
 import 'admin_content_screen.dart';
+import '../../navigation/app_routes.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -99,12 +100,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               icon: Icons.public_outlined,
               title: 'Blog Externo (Sitio Web)',
               subtitle: 'Ver versión estática optimizada para Google.',
-              onTap: () async {
-                final Uri url = Uri.parse('/blog/index.html');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              },
+              onTap: () => context.go(AppRoutes.adminBlog),
               iconColor: const Color(0xFF00E676),
             ),
 
@@ -112,7 +108,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               icon: Icons.settings_applications_outlined,
               title: 'Configuración Global',
               subtitle: 'Ajustes de la aplicación y sistema.',
-              onTap: () {}, // Future placeholder
+              onTap: () => context.push(AppRoutes.adminConfig),
               iconColor: Colors.white54,
             ),
 
