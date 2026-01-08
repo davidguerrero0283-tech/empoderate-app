@@ -45,6 +45,7 @@ class _AccountingV2ScreenState extends State<AccountingV2Screen> {
       title: 'Contabilidad',
       isNeonTitle: true,
       showBackButton: true,
+      useScroll: false, // Fix: Prevent layout collapse from double scroll
       body: Stack(
         children: [
           // MAIN CONTENT - wrapped in Positioned.fill

@@ -4,12 +4,13 @@
 - [x] Fix `vacation_calculator_screen.dart` syntax errors (premature Column close).
 - [x] Clean `decimo_calculator_screen.dart` (removed markdown garbage).
 - [x] Resolve `import_shifts_screen.dart` broken import (`ShiftService` missing).
-- [ ] Verify complete project compilation.
+- [x] Verify complete project compilation.
+- [x] Fix "Black Screen" in Accounting (removed redundant scroll in `AccountingV2Screen`).
 
 ## 🚀 Phase 2: Execution & Debugging
-- [ ] Successful launch on Chrome.
-- [ ] Check for runtime exceptions in browser console.
-- [ ] Verify `GoRouter` navigation.
+- [x] Successful launch on Chrome (via `--web-renderer html`).
+- [x] Check for runtime exceptions in browser console (Clean start).
+- [x] Verify `GoRouter` navigation.
 
 ## 📊 Phase 3: Feature Audit
 - [ ] **Vacation Calculator**: Test persistence and PDF export.
