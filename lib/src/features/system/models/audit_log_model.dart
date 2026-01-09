@@ -9,6 +9,10 @@ class AuditLog {
   final String summary; // Human readable description
   final Map<String, dynamic> meta; // Extra details
   final String severity; // "info", "warning", "error"
+  // Enrichment Fields (V1.1)
+  final String? sessionId;
+  final String? route;
+  final String? module;
 
   AuditLog({
     required this.id,
@@ -20,6 +24,9 @@ class AuditLog {
     required this.summary,
     this.meta = const {},
     this.severity = 'info',
+    this.sessionId,
+    this.route,
+    this.module,
   });
 
   Map<String, dynamic> toJson() {
@@ -33,6 +40,9 @@ class AuditLog {
       'summary': summary,
       'meta': meta,
       'severity': severity,
+      if (sessionId != null) 'sessionId': sessionId,
+      if (route != null) 'route': route,
+      if (module != null) 'module': module,
     };
   }
 
@@ -47,6 +57,9 @@ class AuditLog {
       summary: json['summary'],
       meta: Map<String, dynamic>.from(json['meta'] ?? {}),
       severity: json['severity'] ?? 'info',
+      sessionId: json['sessionId'],
+      route: json['route'],
+      module: json['module'],
     );
   }
 }

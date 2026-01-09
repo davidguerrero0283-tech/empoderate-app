@@ -61,12 +61,36 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
     }
   }
 
+  int _countBySeverity(String severity) {
+     return AuditLoggerService.instance.getLogs(severityFilter: severity).length;
+  }
+
+  Future<void> _handleDownload() async {
+    if (_logs.isEmpty) return;
+    try {
+      AuditLoggerService.instance.downloadLogsWeb();
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Descargando archivo JSON...')),
+        );
+      }
+    } catch(e) {
+       ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+    }
+  }
+
+  // _handleRefresh, _handleExport, _handleClear remain similar but enhanced
   Future<void> _handleClear() async {
+    final count = AuditLoggerService.instance.getLogs().length;
+    if (count == 0) return;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('¿Limpiar Bitácora?'),
-        content: const Text('Esta acción es irreversible.'),
+        content: Text('Se eliminarán $count registros. Esta acción es irreversible.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Limpiar', style: TextStyle(color: Colors.red))),
@@ -87,6 +111,10 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Re-calculating full count for empty check
+    final totalCount = AuditLoggerService.instance.getLogs().length;
+    final isEmpty = totalCount == 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -105,14 +133,19 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
               ),
               Row(
                 children: [
+                   IconButton(
+                    icon: const Icon(Icons.download, color: Colors.blueAccent),
+                    onPressed: isEmpty ? null : _handleDownload, // New
+                    tooltip: 'Descargar JSON',
+                  ),
                   IconButton(
-                    icon: const Icon(Icons.copy, color: Colors.white54),
-                    onPressed: _handleExport,
+                    icon: Icon(Icons.copy, color: isEmpty ? Colors.white24 : Colors.white54),
+                    onPressed: isEmpty ? null : _handleExport,
                     tooltip: 'Copiar JSON',
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
-                    onPressed: _handleClear,
+                    icon: Icon(Icons.delete_sweep, color: isEmpty ? Colors.white24 : Colors.redAccent),
+                    onPressed: isEmpty ? null : _handleClear,
                     tooltip: 'Limpiar Logs',
                   ),
                 ],
@@ -149,10 +182,11 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
+                       // Counters logic embedded
                       _buildFilterChip('Todos', _severityFilter == null, () => setState(() { _severityFilter = null; _loadLogs(); })),
-                      _buildFilterChip('Info', _severityFilter == 'info', () => setState(() { _severityFilter = 'info'; _loadLogs(); })),
-                      _buildFilterChip('Warning', _severityFilter == 'warning', () => setState(() { _severityFilter = 'warning'; _loadLogs(); })),
-                      _buildFilterChip('Error', _severityFilter == 'error', () => setState(() { _severityFilter = 'error'; _loadLogs(); })),
+                      _buildFilterChip('Info (${_countBySeverity("info")})', _severityFilter == 'info', () => setState(() { _severityFilter = 'info'; _loadLogs(); })),
+                      _buildFilterChip('Warning (${_countBySeverity("warning")})', _severityFilter == 'warning', () => setState(() { _severityFilter = 'warning'; _loadLogs(); })),
+                      _buildFilterChip('Error (${_countBySeverity("error")})', _severityFilter == 'error', () => setState(() { _severityFilter = 'error'; _loadLogs(); })),
                       const SizedBox(width: 16),
                       // Type Filters
                       ..._typeOptions.map((t) => Padding(
@@ -285,8 +319,11 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
                  crossAxisAlignment: CrossAxisAlignment.start,
                  children: [
                    _buildDetailRow('ID', log.id),
+                   _buildDetailRow('Session', log.sessionId ?? '-'), // New
                    _buildDetailRow('Actor', log.actor),
                    _buildDetailRow('Action', log.action),
+                   _buildDetailRow('Route', log.route ?? '-'), // New
+                   _buildDetailRow('Module', log.module ?? '-'), // New
                    _buildDetailRow('Entity ID', log.entityId),
                    if (log.meta.isNotEmpty) ...[
                      const SizedBox(height: 8),

@@ -19,6 +19,11 @@ class AnalyticsService {
   };
   
   bool _initialized = false;
+  
+  // Track last route for external access
+  String? _lastRoute;
+  String? get currentRoute => _lastRoute;
+
 
   Future<void> init() async {
     if (_initialized) return;
@@ -65,6 +70,8 @@ class AnalyticsService {
 
   Future<void> trackScreenView(String routeName, {String? overrideModule}) async {
     if (!_initialized) await init();
+    
+    _lastRoute = routeName; // Update local state associated with getter
 
     // 1. Total Views
     _data['total_views'] = (_data['total_views'] as int) + 1;
@@ -94,6 +101,8 @@ class AnalyticsService {
     await _saveData();
   }
 
+  String determineModule(String route) => _determineModule(route); // Public alias
+  
   String _determineModule(String route) {
     if (route.startsWith('/admin')) return 'Admin';
     if (route.startsWith('/hr') || route.startsWith('/human_resources') || route.contains('employee')) return 'RRHH';
