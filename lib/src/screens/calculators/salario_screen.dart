@@ -7,6 +7,7 @@ import '../../components/neon_widgets.dart';
 import '../../components/calculator_info_panel.dart';
 import '../../calculators/salario_models.dart';
 import '../../calculators/salario_logic.dart';
+import '../../calculators/shift_models.dart'; // Import for Shift Integration
 import '../../services/worker_service.dart';
 import '../../features/analytics/analytics_service.dart';
 import '../../features/payroll/domain/payroll_record.dart';
@@ -88,6 +89,8 @@ class _SalarioScreenState extends State<SalarioScreen> {
     final list = await _workerService.getWorkers();
     if (mounted) {
       setState(() => _workers = list);
+      
+      // CASE 1: Initial Load (Widget param)
       if (_selectedWorkerId == null && widget.initialWorkerId != null) {
         try {
           final w = list.firstWhere((element) => element.id == widget.initialWorkerId);
@@ -95,6 +98,15 @@ class _SalarioScreenState extends State<SalarioScreen> {
         } catch (e) {
           debugPrint('Initial worker not found: ${widget.initialWorkerId}');
         }
+      } 
+      // CASE 2: Reloading (e.g. returning from ShiftLogger) - Refresh current selection
+      else if (_selectedWorkerId != null) {
+         try {
+           final updatedWorker = list.firstWhere((w) => w.id == _selectedWorkerId);
+           _selectWorker(updatedWorker); // Re-populate form with new data (shifts, etc.)
+         } catch (e) {
+           _resetForm(); // Worker might have been deleted
+         }
       }
     }
   }
@@ -122,6 +134,74 @@ class _SalarioScreenState extends State<SalarioScreen> {
       } else {
         _detectedVacationAmount = 0.0;
         _includeVacationPay = false;
+      }
+
+      // === SHIFT DATA INTEGRATION (NEW) ===
+      // Find the latest shift period (or one matching the current range)
+      // For now, we look for the most recent period to pre-fill
+      if (w.shiftPeriods.isNotEmpty) {
+        // Sort by date (descending) to get latest
+        final periods = List<WorkPeriod>.from(w.shiftPeriods)
+          ..sort((a, b) => b.startDate.compareTo(a.startDate));
+        
+        final latest = periods.first;
+        
+        // Only auto-fill if it roughly matches our current month/period or is very recent
+        // For UX "Shift -> Calculate" flow, we assume the user worked on the latest period.
+        
+        // Sum Hours
+        double reg = 0;
+        double extD = 0;
+        double extN = 0;
+        double extM = 0;
+        double sunHolMoney = 0;
+        
+        // Rate for money calc
+        double rate = w.hourlyRate ?? (w.basePayment / 208.0);
+        if (rate <= 0) rate = 0; // Safety
+
+        for (var s in latest.shifts) {
+           reg += s.regularHours;
+           extD += s.extraDiurna;
+           extN += s.extraNocturna;
+           extM += s.extraMixta;
+           
+           // Simple Sunday/Holiday Money Estimation
+           // Sunday: +50% surcharge (1.5x total, or 0.5x surcharge if hours are regular)
+           // If "isSunday" is true, usually hours are logged as regular?
+           // Let's assume ShiftLogger logs hours in "Regular" and flags "Sunday".
+           // Calculate Surcharge Amount: RegularHours * Rate * 0.50
+           if (s.isSunday) {
+             sunHolMoney += (s.regularHours * rate * 0.50); 
+           }
+           // Holiday: +150% surcharge (2.5x total) -> 1.5x surcharge
+           if (s.isHoliday) {
+             sunHolMoney += (s.regularHours * rate * 1.50);
+           }
+        }
+        
+        // Populate Input
+        // If Hourly, we populate regular hours (implicitly via base calc or if we add field)
+        // SalarioInputModel logic: "horasDiurnasOrd" is used for specific calc.
+        // For now, we populate EXTRAS which is the main user pain point.
+        
+        if (w.paymentType == PaymentType.hourly) {
+          // For hourly, we might need a way to pass regular hours to the logic
+          // or set baseSalary = Hours * Rate.
+          _input.baseSalary = reg * rate; 
+          // Override the "Monthly Base" with "Actual Earned Base"
+        }
+        
+        _input.horasExtraDiurna = extD;
+        _input.horasExtraNocturna = extN;
+        _input.horasExtraMixtaNocturna = extM;
+        _input.sundayAmount = sunHolMoney; // Pre-fill estimated money
+        
+        if (extD > 0 || extN > 0 || reg > 0) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('✅ Turnos cargados: ${reg.toStringAsFixed(1)}h Reg + ${(extD+extN+extM).toStringAsFixed(1)}h Extras'), backgroundColor: kNeonGreen)
+           );
+        }
       }
     });
   }

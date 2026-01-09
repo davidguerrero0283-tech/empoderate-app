@@ -131,6 +131,7 @@ class SalarioInputModel {
     // Salary history
     List<SalaryHistoryEntry>? salaryHistory,
     this.customDeductions = const [],
+    this.explicitHourlyRate,
   }) : 
     periodStart = periodStart ?? DateTime.now(),
     periodEnd = periodEnd ?? DateTime.now(),
@@ -139,7 +140,17 @@ class SalarioInputModel {
   // Custom Deductions (Full list for persistence)
   List<Map<String, dynamic>> customDeductions;
 
+
+  
+  // New: Explicit Hourly Rate override (for Hourly PaymentType workers)
+  double? explicitHourlyRate;
+
   double get hourlyRate {
+    // If explicitly provided (e.g. Hourly workers), use it
+    if (explicitHourlyRate != null && explicitHourlyRate! > 0) {
+      return explicitHourlyRate!;
+    }
+    
     // Panama Law: Divisor depends on work shift type (Art. 30-31)
     double divisor;
     if (jornadaTipo == JornadaTipo.diurna) {
@@ -166,6 +177,7 @@ class SalarioInputModel {
     'periodStart': periodStart.toIso8601String(),
     'periodEnd': periodEnd.toIso8601String(),
     'baseSalary': baseSalary,
+    'explicitHourlyRate': explicitHourlyRate,
     'frequency': frequency.index,
     'workHoursPerDay': workHoursPerDay,
     'jornadaTipo': jornadaTipo.index,
@@ -196,6 +208,7 @@ class SalarioInputModel {
       periodStart: DateTime.parse(json['periodStart']),
       periodEnd: DateTime.parse(json['periodEnd']),
       baseSalary: (json['baseSalary'] as num).toDouble(),
+      explicitHourlyRate: json['explicitHourlyRate'] != null ? (json['explicitHourlyRate'] as num).toDouble() : null,
       frequency: PayrollFrequency.values[json['frequency'] ?? 0],
       workHoursPerDay: (json['workHoursPerDay'] as num).toDouble(),
       jornadaTipo: JornadaTipo.values[json['jornadaTipo'] ?? 0],

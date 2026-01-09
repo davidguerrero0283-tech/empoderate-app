@@ -239,31 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
         const PwaInstallButton(), 
         
-        // AI AVATAR BUTTON - Quick access to AI Chat
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                 BoxShadow(color: const Color(0xFF00E5FF).withOpacity(0.6), blurRadius: 16, spreadRadius: 2),
-              ],
-            ),
-            child: FloatingActionButton(
-              heroTag: 'ai_avatar_fab',
-             onPressed: () {
-                // Use rootNavigatorKey for context-independent navigation
-                final navContext = rootNavigatorKey.currentContext;
-                if (navContext != null) {
-                  navContext.push(AppRoutes.aiHub);
-                }
-              },
-              backgroundColor: const Color(0xFF00E5FF), // Cyan for AI
-              child: const Icon(Icons.smart_toy, color: Colors.black, size: 28),
-            ),
-          ),
-        ),
+
       ],
     ); 
   }

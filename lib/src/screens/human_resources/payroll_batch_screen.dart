@@ -7,6 +7,7 @@ import '../../calculators/salario_models.dart';
 import '../../calculators/salario_logic.dart';
 import '../../calculators/pa_recargo_rules.dart'; // Import DiaTipo
 import '../../features/payroll/domain/payroll_record.dart';
+import '../../calculators/shift_models.dart'; // Import ShiftRecord
 import '../../services/worker_service.dart';
 
 class PayrollBatchScreen extends StatefulWidget {
@@ -62,18 +63,41 @@ class _PayrollBatchScreenState extends State<PayrollBatchScreen> {
 
     // 2. Loop Workers
     for (var worker in widget.selectedWorkers) {
-      // Create Input Model from Profile
-      // Logic: If worker pays Monthly but we run Quincenal, we split base?
-      // For simplicity V1: We use the basePayment from profile as the Period Salary unless we detect mismatch.
-      // But typically basePayment in profile is "Base Contractual". 
-      // Let's assume Profile Base = Monthly.
-      
       double calcBase = worker.basePayment;
+      double? explicitRate;
       
-      // Conversion logic if profiles are always entered as Monthly
-      if (worker.paymentMode == PayrollFrequency.mensual && _frequency == PayrollFrequency.quincenal) {
-        calcBase = worker.basePayment / 2;
+      // Calculate derived/assumed base for period if Base Salary
+      if (worker.paymentType == PaymentType.base) {
+        if (worker.paymentMode == PayrollFrequency.mensual && _frequency == PayrollFrequency.quincenal) {
+          calcBase = worker.basePayment / 2;
+        }
+      } else {
+        // Hourly Worker: Base is 0, we use hours
+        calcBase = 0;
+        explicitRate = worker.hourlyRate ?? 0;
       }
+      
+      // FETCH REAL SHIFTS for this worker in this period
+      final periodShifts = _getShiftsForPeriod(worker, periodStart, periodEnd);
+      
+      // Sum Hours from Real Data
+      double totalRegular = 0;
+      double totalExtraDiu = 0;
+      double totalExtraNoc = 0;
+      double totalExtraMix = 0;
+      double totalHolidayAmt = 0;
+      double totalSundayAmt = 0;
+
+      for (var s in periodShifts) {
+         totalRegular += s.regularHours;
+         totalExtraDiu += s.extraDiurna;
+         totalExtraNoc += s.extraNocturna;
+         totalExtraMix += s.extraMixta;
+         // TODO: Add Holiday/Sunday amount logic if needed, or pass hours if model supports
+      }
+
+      // If no shifts found but user is Salaried, we assume standard week (optional: could warn)
+      // For V1 Real Data: We pass the found hours.
       
       final input = SalarioInputModel(
         workerName: worker.name,
@@ -81,9 +105,18 @@ class _PayrollBatchScreenState extends State<PayrollBatchScreen> {
         periodStart: periodStart,
         periodEnd: periodEnd,
         baseSalary: calcBase,
+        explicitHourlyRate: explicitRate,
         frequency: _frequency,
         workHoursPerDay: 8,
         diaTipo: DiaTipo.normal,
+        // Real Data Injection
+        horasDiurnasOrd: (worker.paymentType == PaymentType.hourly) ? totalRegular : 0, 
+        // For Base workers, regular hours are covered by baseSalary usually. 
+        // Only set proper hours if Hourly.
+        
+        horasExtraDiurna: totalExtraDiu,
+        horasExtraNocturna: totalExtraNoc,
+        horasExtraMixtaNocturna: totalExtraMix,
       );
 
       final result = SalarioLogic.calculate(input);
@@ -97,7 +130,7 @@ class _PayrollBatchScreenState extends State<PayrollBatchScreen> {
         updatedAt: DateTime.now(),
         inputSnapshot: input.toJson(),
         resultSnapshot: result.toJson(),
-        notes: 'Generado desde Planilla Masiva',
+        notes: 'Generado desde Planilla Masiva (${periodShifts.length} turnos encontrados)',
       );
 
       // Update Worker
@@ -157,6 +190,23 @@ class _PayrollBatchScreenState extends State<PayrollBatchScreen> {
         ],
       ),
     );
+  }
+
+  List<ShiftRecord> _getShiftsForPeriod(WorkerProfile worker, DateTime start, DateTime end) {
+    List<ShiftRecord> foundShifts = [];
+    // Normalize range to end of day
+    final rangeStart = DateTime(start.year, start.month, start.day);
+    final rangeEnd = DateTime(end.year, end.month, end.day, 23, 59, 59);
+
+    for (var period in worker.shiftPeriods) {
+       for (var shift in period.shifts) {
+         if (shift.date.isAfter(rangeStart.subtract(const Duration(seconds: 1))) && 
+             shift.date.isBefore(rangeEnd.add(const Duration(seconds: 1)))) {
+           foundShifts.add(shift);
+         }
+       }
+    }
+    return foundShifts;
   }
 
   @override

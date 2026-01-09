@@ -50,13 +50,7 @@ class __ScheduleContentState extends State<_ScheduleContent> {
       subtitle: 'Horarios Semanales',
       usePadding: false,
       useScroll: false, 
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAiAssistant(context),
-        icon: const Icon(Icons.auto_awesome, color: Colors.white),
-        label: const Text('Asistente IA'),
-        backgroundColor: Colors.purpleAccent,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+
       body: isLoading 
           ? const Center(child: CircularProgressIndicator()) 
           : SingleChildScrollView(
@@ -77,6 +71,15 @@ class __ScheduleContentState extends State<_ScheduleContent> {
                   
                   // QUICK ACTIONS (Directorio & More)
                   _buildQuickActions(context),
+                  const SizedBox(height: 12),
+
+                  // AI ASSISTANT BUTTON (Replaces FAB)
+                  NeonButton(
+                    text: "Asistente Inteligente (Reglas & Generación)",
+                    icon: Icons.auto_awesome,
+                    color: Colors.purpleAccent,
+                    onTap: () => _showAiAssistant(context),
+                  ),
                   const SizedBox(height: 16),
 
                   // DATE NAVIGATOR (New Feature)
