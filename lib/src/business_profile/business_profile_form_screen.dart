@@ -320,7 +320,7 @@ class _BusinessProfileFormScreenState extends State<BusinessProfileFormScreen> {
               BusinessInputField(
                 label: 'Nombre Comercial',
                 controller: _nombreController,
-                placeholder: 'Ej: Panadería El Buen Pan',
+                placeholder: 'Ej: Panadería La Espiga Dorada',
               ),
               BusinessInputField(
                 label: 'RUC / Cédula (Opcional)',

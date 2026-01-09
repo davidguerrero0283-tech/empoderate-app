@@ -63,16 +63,28 @@ class SideMenuDrawer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
            Center(
-             child: Container(
-               decoration: BoxDecoration(
-                 shape: BoxShape.circle,
-                 border: Border.all(color: const Color(0xFFD4AF37), width: 2),
-               ),
-                 child: const CircleAvatar(
-                   radius: 36,
-                   backgroundColor: Color(0xFF001B3A),
-                   child: Icon(Icons.person, size: 40, color: Color(0xFFD4AF37)),
+             child: Material(
+               color: Colors.transparent,
+               child: InkWell(
+                 borderRadius: BorderRadius.circular(999),
+                 onTap: () {
+                   Navigator.of(context).pop(); // Close drawer
+                   context.push(AppRoutes.businessProfileForm); // Navigate to edit profile
+                 },
+                 child: Container(
+                   width: 76,
+                   height: 76,
+                   decoration: BoxDecoration(
+                     shape: BoxShape.circle,
+                     border: Border.all(color: const Color(0xFFD4AF37), width: 2),
+                   ),
+                   child: const CircleAvatar(
+                     radius: 36,
+                     backgroundColor: Color(0xFF001B3A),
+                     child: Icon(Icons.person, size: 40, color: Color(0xFFD4AF37)),
+                   ),
                  ),
+               ),
              ),
            ),
            const SizedBox(height: 16),

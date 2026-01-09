@@ -10,6 +10,7 @@ import '../components/premium_pink_neon_accordion.dart';
 import '../components/business_hero_header.dart'; // [NEW] Premium Header
 import 'package:go_router/go_router.dart';
 import 'learning/module_guide_data.dart';
+import '../navigation/app_routes.dart';
 
 class MiNegocioRubroScreen extends StatefulWidget {
   const MiNegocioRubroScreen({Key? key}) : super(key: key);
@@ -84,7 +85,7 @@ class _MiNegocioRubroScreenState extends State<MiNegocioRubroScreen> {
               title: 'Explora Industrias',
               categoryName: 'DIRECTORIO DE NEGOCIOS', 
               icon: Icons.storefront,
-              onBackPressed: () => context.pop(),
+              onBackPressed: () => context.canPop() ? context.pop() : context.go(AppRoutes.home),
               isCompact: true, // [NEW] Smaller header
             ),
             

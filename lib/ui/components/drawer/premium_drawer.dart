@@ -563,29 +563,39 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
           StatefulBuilder(
             builder: (context, setAvatarState) {
               bool isHovered = false;
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                onEnter: (_) => setAvatarState(() => isHovered = true),
-                onExit: (_) => setAvatarState(() => isHovered = false),
-                child: GestureDetector(
-                  onTap: () => _showProfileModal(context),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: isHovered
-                          ? [
-                              BoxShadow(
-                                color: kNeonGold.withOpacity(0.6),
-                                blurRadius: 20,
-                                spreadRadius: 3,
-                              ),
-                            ]
-                          : [],
-                    ),
+              // START FIX: Use Material + InkWell for robust click handling
+              return Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    // Close drawer
+                    if (Navigator.canPop(context)) {
+                      Navigator.of(context).pop();
+                    }
+                    
+                    // Navigate using root navigator context
+                    final navContext = rootNavigatorKey.currentContext;
+                    if (navContext != null) {
+                      navContext.push(AppRoutes.businessProfileForm);
+                    } else {
+                      debugPrint('Error: Root navigator context is null');
+                    }
+                  },
+                  onHover: (hovering) => setAvatarState(() => isHovered = hovering),
+                  hoverColor: kNeonGold.withOpacity(0.1),
+                  splashColor: kNeonGold.withOpacity(0.2),
+                  child: SizedBox(
+                    width: 76, 
+                    height: 76,
                     child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center, // Center contents
                       children: [
-                        Container(
+                        // Avatar Container
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.all(1.5),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
@@ -593,9 +603,18 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
                               color: isHovered ? kNeonGold : kNeonGold.withOpacity(0.6),
                               width: isHovered ? 3 : 2,
                             ),
+                            boxShadow: isHovered
+                                ? [
+                                    BoxShadow(
+                                      color: kNeonGold.withOpacity(0.6),
+                                      blurRadius: 20,
+                                      spreadRadius: 3,
+                                    ),
+                                  ]
+                                : [],
                           ),
                           child: CircleAvatar(
-                            radius: 36, // Slightly larger
+                            radius: 36, 
                             backgroundColor: Colors.black.withOpacity(0.3),
                             backgroundImage: hasImage 
                                 ? MemoryImage(_profileService.profileImageBytes!) 
@@ -614,6 +633,7 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
                                     : Icon(Icons.person_outline, size: 40, color: kNeonGold.withOpacity(0.9)),
                           ),
                         ),
+                        // Mini Pencil Icon
                         Positioned(
                           right: 0,
                           bottom: 0,
@@ -634,6 +654,7 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
                   ),
                 ),
               );
+              // END FIX
             },
           ),
           const SizedBox(height: 16),
@@ -656,14 +677,24 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
           StatefulBuilder(
             builder: (context, setBadgeState) {
               bool isHovered = false;
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                onEnter: (_) => setBadgeState(() => isHovered = true),
-                onExit: (_) => setBadgeState(() => isHovered = false),
-                child: GestureDetector(
+              // Use InkWell for Plan Button too for consistency
+              return Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
                   onTap: () {
-                    AppRoutes.navigatorKey.currentState?.pushNamed(AppRoutes.premiumPlans);
+                     // Close drawer
+                    if (Navigator.canPop(context)) {
+                      Navigator.of(context).pop();
+                    }
+                    
+                    final navContext = rootNavigatorKey.currentContext;
+                    if (navContext != null) {
+                       navContext.push(AppRoutes.premiumPlans);
+                    }
                   },
+                  onHover: (hovering) => setBadgeState(() => isHovered = hovering),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

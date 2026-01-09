@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../components/premium_scaffold.dart';
 import '../components/section_option_card.dart';
 import '../navigation/app_routes.dart';
@@ -18,25 +19,25 @@ class BusinessProfileHomeScreen extends StatelessWidget {
             icon: Icons.edit,
             title: 'Editar perfil del negocio',
             subtitle: 'Actualiza tu información',
-            onTap: () => Navigator.pushNamed(context, AppRoutes.businessProfileForm),
+            onTap: () => context.push(AppRoutes.businessProfileForm),
           ),
           SectionOptionCard(
             icon: Icons.visibility,
             title: 'Ver perfil registrado',
             subtitle: 'Consulta tus datos',
-            onTap: () => Navigator.pushNamed(context, AppRoutes.businessProfileReview),
+            onTap: () => context.push(AppRoutes.businessProfileReview),
           ),
           SectionOptionCard(
             icon: Icons.notifications_active,
             title: 'Recordatorios automáticos',
             subtitle: 'Alertas generadas por IA',
-            onTap: () => Navigator.pushNamed(context, AppRoutes.reminders),
+            onTap: () => context.push(AppRoutes.reminders),
           ),
           SectionOptionCard(
             icon: Icons.add_alarm,
             title: 'Crear recordatorio manual',
             subtitle: 'Personaliza tus alertas',
-            onTap: () => Navigator.pushNamed(context, AppRoutes.reminderDetail),
+            onTap: () => context.push(AppRoutes.reminderDetail),
           ),
         ],
       ),
