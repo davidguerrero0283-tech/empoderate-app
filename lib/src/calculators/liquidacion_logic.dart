@@ -371,6 +371,7 @@ class LiquidacionLogic {
       salarioAdeudadoDetalle: salarioAdeudadoDetalle,
       vacacionesVencidasDetalle: vacacionesVencidasDetalle,
       vacacionesProporcionalesDetalle: vacacionesProporcionalesDetalle,
+      netoPagar: totalPagar, // Same as totalPagar now, but semantic field added
     );
   }
 }

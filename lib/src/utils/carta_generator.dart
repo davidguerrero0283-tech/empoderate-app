@@ -117,7 +117,7 @@ class CartaGenerator {
     buffer.writeln("------------------------------------------------");
     buffer.writeln("Total Devengado:    ${currencyFormat.format(result.subtotalDevengos)}");
     buffer.writeln("(-) Deducciones:    ${currencyFormat.format(result.totalDeducciones)}");
-    buffer.writeln("TOTAL A RECIBIR:    ${currencyFormat.format(result.totalPagar)}");
+    buffer.writeln("TOTAL NETO A RECIBIR: ${currencyFormat.format(result.netoPagar)}");
     buffer.writeln("------------------------------------------------");
     buffer.writeln("");
 

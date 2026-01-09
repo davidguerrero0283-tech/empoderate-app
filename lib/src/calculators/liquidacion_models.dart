@@ -150,6 +150,16 @@ class LiquidacionInputModel {
   // Salary History Log (NEW - Professional tracking)
   List<SalaryHistoryEntry> salaryHistory;
 
+  // Deductions Configuration
+  bool applyDeductions;
+  bool deductFromSalarios;
+  bool deductFromVacaciones;
+  bool deductFromDecimo;
+  bool deductFromIndemnizacion;
+  bool deductFromPreaviso;
+  // bool deductOnlyEducationFromDecimo; // Implicit: Decimo only pays CSS/SE, but usually 1.25% SE is always deducting. SE is mandatory. CSS depends.
+  bool applyISRToIndemnizacion; // Indemnización is usually tax free up to limit, but optional check.
+
   LiquidacionInputModel({
     this.workerName = '',
     this.workerId = '',
@@ -199,6 +209,15 @@ class LiquidacionInputModel {
     this.totalHistoricEarnings = 0.0,
     this.gavePreaviso = false,
     List<SalaryHistoryEntry>? salaryHistory,
+    
+    // Deductions defaults
+    this.applyDeductions = false,
+    this.deductFromSalarios = true, // Wages always taxed
+    this.deductFromVacaciones = true, // Vacations always taxed
+    this.deductFromDecimo = true, // Decimo taxed (7.25% CSS + 1.25% SE usually, but we have standard toggles)
+    this.deductFromIndemnizacion = false, // Usually exempt
+    this.deductFromPreaviso = true, // Viewed as salary replacement, usually taxed
+    this.applyISRToIndemnizacion = false,
   }) : salaryHistory = salaryHistory ?? [];
 
   // Helper logic to get standard base for calculations
@@ -302,5 +321,8 @@ class LiquidacionResultModel {
     this.salarioAdeudadoDetalle,
     this.vacacionesVencidasDetalle,
     this.vacacionesProporcionalesDetalle,
+    this.netoPagar = 0.0, // New: Final Net
   });
+  
+  final double netoPagar;
 }

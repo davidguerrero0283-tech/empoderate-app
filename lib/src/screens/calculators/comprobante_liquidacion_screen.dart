@@ -139,8 +139,8 @@ class _ComprobanteLiquidacionScreenState extends State<ComprobanteLiquidacionScr
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('TOTAL A RECIBIR:', style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text('B/. ${widget.result.totalPagar.toStringAsFixed(2)}', style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20)),
+                    Text('TOTAL A RECIBIR (NETO):', style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text('B/. ${widget.result.netoPagar.toStringAsFixed(2)}', style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20)),
                   ],
                 ),
               ),

@@ -110,6 +110,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                       _buildNavItem('Contenido', Icons.article_outlined, AppRoutes.adminContent),
                       
                       _buildSectionHeader('SISTEMA'),
+                      _buildNavItem('Configuración', Icons.settings_outlined, '/admin/config'),
                       _buildNavItem('Visibilidad (Flags)', Icons.toggle_on_outlined, AppRoutes.adminVisibility),
                       _buildNavItem('Auditoría', Icons.history_edu_outlined, AppRoutes.adminAudit),
                       _buildNavItem('Salud', Icons.monitor_heart_outlined, AppRoutes.adminSystem),

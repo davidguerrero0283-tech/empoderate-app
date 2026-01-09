@@ -126,6 +126,7 @@ import '../screens/admin/admin_audit_screen.dart';
 import '../screens/admin/admin_system_screen.dart';
 import '../screens/admin/admin_ai_screen.dart';
 import '../features/admin/layout/admin_layout.dart';
+import '../screens/admin/config/global_config_screen.dart';
 
 // Other Screens
 import '../screens/inicio_negocio_screen.dart';
@@ -1112,6 +1113,14 @@ class AppRouter {
         builder: (context, state) => const AdminLayout(
           currentRoute: '/admin/ai',
           child: AdminAiScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/admin/config',
+        name: 'admin_config', // Must match name used in sidebar
+        builder: (context, state) => const AdminLayout(
+          currentRoute: '/admin/config',
+          child: GlobalConfigScreen(),
         ),
       ),
       GoRoute(

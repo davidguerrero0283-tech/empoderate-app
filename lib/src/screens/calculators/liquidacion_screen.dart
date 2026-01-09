@@ -466,8 +466,43 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                             Text('📉 Deducciones', style: GoogleFonts.outfit(color: kNeonPink, fontSize: 18, fontWeight: FontWeight.bold)),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 Text('📉 Deducciones de Ley', style: GoogleFonts.outfit(color: kNeonPink, fontSize: 18, fontWeight: FontWeight.bold)),
+                                 NeonSwitch(
+                                   value: _input.applyDeductions, 
+                                   onChanged: (v) => setState(() => _input.applyDeductions = v),
+                                   label: 'Aplicar',
+                                 ),
+                               ],
+                             ),
                              const SizedBox(height: 16),
+                             
+                             if (_input.applyDeductions) ...[
+                               Container(
+                                 padding: const EdgeInsets.all(12),
+                                 decoration: BoxDecoration(
+                                   color: Colors.white.withOpacity(0.05),
+                                   borderRadius: BorderRadius.circular(8),
+                                 ),
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Text('Bases para Cálculo (CSS/SE/ISR):', style: GoogleFonts.outfit(color: Colors.white70, fontSize: 12)),
+                                     const SizedBox(height: 8),
+                                     _buildCompactCheckbox('Salarios (Adeudados)', _input.deductFromSalarios, (v) => setState(() => _input.deductFromSalarios = v!)),
+                                     _buildCompactCheckbox('Vacaciones', _input.deductFromVacaciones, (v) => setState(() => _input.deductFromVacaciones = v!)),
+                                     _buildCompactCheckbox('Décimo Tercero', _input.deductFromDecimo, (v) => setState(() => _input.deductFromDecimo = v!)),
+                                     _buildCompactCheckbox('Preaviso', _input.deductFromPreaviso, (v) => setState(() => _input.deductFromPreaviso = v!)),
+                                     const Divider(color: Colors.white12),
+                                     _buildCompactCheckbox('Indemnización (Opcional)', _input.deductFromIndemnizacion, (v) => setState(() => _input.deductFromIndemnizacion = v!)),
+                                   ],
+                                 ),
+                               ),
+                               const SizedBox(height: 16),
+                             ],
+
                              NeonInput(label: 'Préstamos (\$)', isNumber: true, onChanged: (v) => _input.loans = double.tryParse(v) ?? 0, initialValue: _input.loans > 0 ? _input.loans.toString() : ''),
                              NeonInput(label: 'Otros (\$)', isNumber: true, onChanged: (v) => _input.otherDeductions = double.tryParse(v) ?? 0, initialValue: _input.otherDeductions > 0 ? _input.otherDeductions.toString() : ''),
                           ],
@@ -579,6 +614,25 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
          title: Text('${entry.month}/${entry.year}', style: const TextStyle(color: Colors.white)),
          trailing: Text('\$${entry.amount.toStringAsFixed(2)}', style: const TextStyle(color: kNeonGold)),
       )).toList(),
+    );
+  }
+
+  Widget _buildCompactCheckbox(String label, bool value, Function(bool?) onChanged) {
+    return Row(
+      children: [
+        SizedBox(
+          height: 24, 
+          width: 24,
+          child: Checkbox(
+            value: value, 
+            onChanged: onChanged,
+            activeColor: kNeonPink,
+            side: const BorderSide(color: Colors.white54),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 13)),
+      ],
     );
   }
 
