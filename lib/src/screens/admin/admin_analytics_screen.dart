@@ -1,90 +1,209 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../components/neon_widgets.dart';
 import '../../components/how_to_use_card.dart';
+import '../../features/analytics/services/analytics_service.dart';
 
-class AdminAnalyticsScreen extends StatelessWidget {
+class AdminAnalyticsScreen extends StatefulWidget {
   const AdminAnalyticsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // This widget is embedded inside AdminLayout, so no need for Scaffold
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Analítica Detallada',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Exportando CSV...')),
-                  );
-                },
-                icon: const Icon(Icons.download, color: Color(0xFF00E5FF)),
-                label: const Text('Exportar', style: TextStyle(color: Color(0xFF00E5FF))),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+  State<AdminAnalyticsScreen> createState() => _AdminAnalyticsScreenState();
+}
 
-          // How to Use Card
-          const HowToUseCard(
-            title: '¿Cómo usar Analytics?',
-            icon: Icons.bar_chart,
-            accentColor: Color(0xFF00E5FF),
-            steps: [
-              'Revisa los KPIs principales en las tarjetas superiores.',
-              'Analiza el desglose por módulo para ver qué secciones son más populares.',
-              'Usa el botón "Exportar" para descargar los datos en formato CSV.',
-              'Los datos se actualizan automáticamente cada hora.',
-            ],
-          ),
+class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
+  late Future<void> _initFuture;
+  Map<String, dynamic> _stats = {};
 
-          const SizedBox(height: 16),
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
-          // KPI Cards - Using Wrap for responsiveness
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              _buildKpiCard('Visitas Totales', '3,450', '+12%', Colors.blue),
-              _buildKpiCard('Tiempo Promedio', '4m 12s', '+5%', Colors.green),
-              _buildKpiCard('Tasa Rebote', '28%', '-2%', Colors.orange),
-              _buildKpiCard('Conversión', '4.5%', '+0.5%', Colors.purple),
-            ],
-          ),
-          
-          const SizedBox(height: 32),
-          
-          const NeonSectionTitle(title: 'Desglose por Módulo', color: Colors.white),
-          const SizedBox(height: 16),
-          
-          // Module Rows (Simpler than DataTable)
-          _buildModuleRow('Contabilidad', '1,200', '3m 45s', '22%', Colors.blue),
-          _buildModuleRow('RRHH', '890', '5m 10s', '18%', Colors.purple),
-          _buildModuleRow('Marketing', '650', '4m 30s', '32%', Colors.pink),
-          _buildModuleRow('Legal', '710', '6m 05s', '15%', Colors.orange),
-          
-          const SizedBox(height: 80),
+  void _loadData() {
+    setState(() {
+      _initFuture = AnalyticsService.instance.init().then((_) {
+        _stats = AnalyticsService.instance.getStats();
+      });
+    });
+  }
+
+  Future<void> _resetData() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Resetear Analítica?'),
+        content: const Text('Esto borrará todos los contadores locales. No se puede deshacer.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Borrar', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
+
+    if (confirm == true) {
+      await AnalyticsService.instance.resetAnalytics();
+      _loadData();
+    }
   }
 
-  Widget _buildKpiCard(String title, String value, String trend, Color color) {
-    final isPositive = trend.startsWith('+');
+  void _exportData() {
+    final jsonStr = AnalyticsService.instance.exportToJson();
+    Clipboard.setData(ClipboardData(text: jsonStr));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('JSON copiado al portapapeles')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _initFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final totalViews = _stats['total_views'] ?? 0;
+        final sessions = _stats['sessions'] ?? 0;
+        final lastSeen = _stats['last_seen'] != null 
+            ? DateTime.parse(_stats['last_seen']).toLocal().toString().split('.')[0]
+            : 'Nunca';
+        
+        final Map<String, int> viewsByModule = Map<String, int>.from(_stats['views_by_module'] ?? {});
+        final Map<String, int> viewsByRoute = Map<String, int>.from(_stats['views_by_route'] ?? {});
+
+        // Sort Top Routes
+        final topRoutes = viewsByRoute.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Analítica V2 (Real)',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                       IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white70),
+                        tooltip: 'Recargar',
+                        onPressed: _loadData,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.cleaning_services, color: Colors.redAccent),
+                        tooltip: 'Resetear',
+                        onPressed: _resetData,
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: _exportData,
+                        icon: const Icon(Icons.copy, color: Color(0xFF00E5FF)),
+                        label: const Text('Copiar JSON', style: TextStyle(color: Color(0xFF00E5FF))),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // How to Use Card
+              const HowToUseCard(
+                title: 'Analítica Local en Tiempo Real',
+                icon: Icons.track_changes,
+                accentColor: Color(0xFF00E5FF),
+                steps: [
+                  'Estos datos son reales y se guardan en tu dispositivo.',
+                  'Navega por la app para ver cómo aumentan los contadores.',
+                  '"Vistas Totales" cuenta cada cambio de pantalla.',
+                  '"Top Rutas" te muestra qué pantallas visitas más.',
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // KPI Cards
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  _buildKpiCard('Vistas Totales', '$totalViews', 'Total acumulado', Colors.blue),
+                  _buildKpiCard('Sesiones', '$sessions', 'Inicios de app', Colors.green),
+                  _buildKpiCard('Última Actividad', lastSeen, 'Timestamp', Colors.orange),
+                  _buildKpiCard('Rutas Únicas', '${viewsByRoute.length}', 'Pantallas visitadas', Colors.purple),
+                ],
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // Modules Breakdown
+              const NeonSectionTitle(title: 'Vistas por Módulo', color: Colors.white),
+              const SizedBox(height: 16),
+              if (viewsByModule.isEmpty) 
+                const Text('Navega para generar datos...', style: TextStyle(color: Colors.white54))
+              else
+                ...viewsByModule.entries.map((e) => _buildModuleRow(
+                  e.key, 
+                  '${e.value}', 
+                  '${((e.value / totalViews) * 100).toStringAsFixed(1)}%', 
+                  _getColorForModule(e.key)
+                )).toList(),
+
+              const SizedBox(height: 32),
+
+              // Top Routes Table
+              const NeonSectionTitle(title: 'Top 5 Rutas Más Visitadas', color: Colors.white),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Column(
+                  children: topRoutes.take(5).map((e) => ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.subdirectory_arrow_right, color: Colors.white54, size: 16),
+                    title: Text(e.key, style: GoogleFonts.outfit(color: Colors.white)),
+                    trailing: Text('${e.value} vistas', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                  )).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 80),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Color _getColorForModule(String module) {
+    switch (module) {
+      case 'Admin': return Colors.redAccent;
+      case 'RRHH': return Colors.purpleAccent;
+      case 'Contabilidad': return Colors.blueAccent;
+      case 'Marketing': return Colors.pinkAccent;
+      case 'IA Hub': return Colors.tealAccent;
+      default: return Colors.grey;
+    }
+  }
+
+  Widget _buildKpiCard(String title, String value, String subtitle, Color color) {
     return Container(
       width: 160,
       padding: const EdgeInsets.all(16),
@@ -98,29 +217,24 @@ class AdminAnalyticsScreen extends StatelessWidget {
         children: [
           Text(title, style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 8),
-          Text(value, style: GoogleFonts.outfit(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isPositive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+          Text(
+            value, 
+            style: GoogleFonts.outfit(
+              color: Colors.white, 
+              fontSize: value.length > 10 ? 14 : 22, // Dynamic font for timestamps
+              fontWeight: FontWeight.bold
             ),
-            child: Text(
-              trend, 
-              style: GoogleFonts.outfit(
-                color: isPositive ? Colors.greenAccent : Colors.redAccent, 
-                fontSize: 11, 
-                fontWeight: FontWeight.bold
-              )
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 4),
+          Text(subtitle, style: GoogleFonts.outfit(color: color.withOpacity(0.8), fontSize: 11)),
         ],
       ),
     );
   }
 
-  Widget _buildModuleRow(String module, String visits, String avgTime, String bounce, Color color) {
+  Widget _buildModuleRow(String module, String visits, String percentage, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -141,33 +255,9 @@ class AdminAnalyticsScreen extends StatelessWidget {
             child: Text(module, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Visitas', style: GoogleFonts.outfit(color: Colors.white38, fontSize: 10)),
-                Text(visits, style: GoogleFonts.outfit(color: Colors.white70)),
-              ],
-            ),
+            child: Text('$visits vistas', style: GoogleFonts.outfit(color: Colors.white70)),
           ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tiempo', style: GoogleFonts.outfit(color: Colors.white38, fontSize: 10)),
-                Text(avgTime, style: GoogleFonts.outfit(color: Colors.white70)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Rebote', style: GoogleFonts.outfit(color: Colors.white38, fontSize: 10)),
-                Text(bounce, style: GoogleFonts.outfit(color: Colors.white70)),
-              ],
-            ),
-          ),
-          const Icon(Icons.trending_up, color: Colors.greenAccent, size: 18),
+          Text(percentage, style: GoogleFonts.outfit(color: color, fontWeight: FontWeight.bold)),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../system/services/audit_logger_service.dart'; // NEW
 
 class UserService {
   static final UserService instance = UserService._();
@@ -58,6 +59,15 @@ class UserService {
     };
     _users.add(newUser);
     await _saveUsers();
+    
+    // Log Audit
+    AuditLoggerService.instance.log(
+      'USER_CREATED',
+      entityType: 'User',
+      entityId: newId.toString(),
+      summary: 'Created user ${newUser['name']}',
+      meta: newUser,
+    );
   }
 
   Future<void> updateUser(Map<String, dynamic> userData) async {
@@ -65,11 +75,29 @@ class UserService {
     if (index != -1) {
       _users[index] = {..._users[index], ...userData};
       await _saveUsers();
+
+      // Log Audit
+      AuditLoggerService.instance.log(
+        'USER_UPDATED',
+        entityType: 'User',
+        entityId: userData['id'].toString(),
+        summary: 'Updated user ${userData['name'] ?? 'ID ${userData['id']}'}',
+        meta: userData,
+      );
     }
   }
 
   Future<void> deleteUser(int id) async {
     _users.removeWhere((u) => u['id'] == id);
     await _saveUsers();
+
+    // Log Audit
+    AuditLoggerService.instance.log(
+      'USER_DELETED',
+      entityType: 'User',
+      entityId: id.toString(),
+      summary: 'Deleted user ID $id',
+      severity: 'warning',
+    );
   }
 }

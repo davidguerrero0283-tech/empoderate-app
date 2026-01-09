@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post_draft_model.dart';
+import '../../system/services/audit_logger_service.dart'; // NEW
 
 class ContentService {
   static final ContentService instance = ContentService._();
@@ -75,6 +76,14 @@ class ContentService {
   Future<void> deleteDraft(String id) async {
     _drafts.removeWhere((d) => d.id == id);
     await saveDrafts();
+    
+    AuditLoggerService.instance.log(
+      'DRAFT_DELETED',
+      entityType: 'Post',
+      entityId: id,
+      summary: 'Deleted draft $id',
+      severity: 'warning',
+    );
   }
 
   // Publish draft
@@ -85,6 +94,15 @@ class ContentService {
         status: 'published',
         updatedAt: DateTime.now(),
       ));
+      
+      // Log Audit
+      AuditLoggerService.instance.log(
+        'POST_PUBLISHED',
+        entityType: 'Post',
+        entityId: draft.id,
+        summary: 'Published post: ${draft.title}',
+        meta: {'slug': draft.slug},
+      );
     }
   }
 

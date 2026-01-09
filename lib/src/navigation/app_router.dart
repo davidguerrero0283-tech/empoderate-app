@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
 import '../screens/coming_soon_screen.dart'; // NEW
+import '../features/analytics/services/analytics_service.dart'; // NEW
 
 // Shell
 import 'main_shell.dart';
@@ -163,12 +164,45 @@ import '../calculators/salario_models.dart';
 /// Global navigator key for compatibility
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
+
+
+/// Custom Observer to track route changes
+class AnalyticsNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    _logRoute(route);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute != null) _logRoute(newRoute);
+  }
+
+  void _logRoute(Route<dynamic> route) {
+    if (route.settings.name != null) {
+      // Track by route name if available
+      AnalyticsService.instance.trackScreenView(route.settings.name!);
+      debugPrint('📊 Analytics Tracked: ${route.settings.name}');
+    } else if (route.settings.name == null && route.toString().contains('ModalBottomSheetRoute')) {
+       // Ignore modals
+    } else {
+       // Fallback for unnamed routes (less common in go_router with names)
+       debugPrint('📊 Analytics Ignored (Unnamed): ${route.settings.name}');
+    }
+  }
+}
+
 /// App Router configuration with go_router
 class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: true,
+    observers: [ // Add observer here
+      AnalyticsNavigatorObserver(),
+    ],
     
     // Error handler for unknown routes
     errorBuilder: (context, state) => Scaffold(

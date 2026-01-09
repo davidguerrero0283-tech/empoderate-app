@@ -215,12 +215,16 @@ class _AdminLayoutState extends State<AdminLayout> {
               ),
               if (!_isSidebarCollapsed) ...[
                 const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    color: isActive ? Colors.white : Colors.white70,
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal
+                Flexible(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      color: isActive ? EmpoderateTheme.goldStrong : Colors.white70,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ]
