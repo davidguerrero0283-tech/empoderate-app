@@ -1,108 +1,138 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../system/services/audit_logger_service.dart';
+import '../models/analytics_store.dart';
+import 'package:uuid/uuid.dart'; // Just using timestamp or random for now if no uuid pkg
 
 class AnalyticsService {
   static final AnalyticsService instance = AnalyticsService._();
   AnalyticsService._();
 
   static const String _storageKey = 'analytics_v2_data';
-  
-  // Data State
-  Map<String, dynamic> _data = {
-    'total_views': 0,
-    'sessions': 0,
-    'last_seen': null,
-    'views_by_route': <String, int>{},
-    'views_by_module': <String, int>{},
-    'daily_activity': <String, int>{},
-  };
-  
+  AnalyticsStore _store = AnalyticsStore();
   bool _initialized = false;
   
-  // Track last route for external access
+  // Track last route for external access/enrichment
   String? _lastRoute;
   String? get currentRoute => _lastRoute;
 
-
   Future<void> init() async {
     if (_initialized) return;
-    await _loadData();
-    _registerSession();
+    await _loadStore();
+    _startSessionIfNeeded();
     _initialized = true;
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadStore() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? raw = prefs.getString(_storageKey);
       if (raw != null) {
         final decoded = json.decode(raw);
-        _data = {
-          'total_views': decoded['total_views'] ?? 0,
-          'sessions': decoded['sessions'] ?? 0,
-          'last_seen': decoded['last_seen'],
-          'views_by_route': Map<String, int>.from(decoded['views_by_route'] ?? {}),
-          'views_by_module': Map<String, int>.from(decoded['views_by_module'] ?? {}),
-          'daily_activity': Map<String, int>.from(decoded['daily_activity'] ?? {}),
-        };
+        _store = AnalyticsStore.fromJson(decoded);
+      } else {
+        // First run
+        _store = AnalyticsStore(firstSeenAt: DateTime.now().toIso8601String());
       }
     } catch (e) {
       debugPrint('Analytics Load Error: $e');
+      _store = AnalyticsStore(); // Fallback
     }
   }
 
-  Future<void> _saveData() async {
+  Future<void> _saveStore() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_storageKey, json.encode(_data));
+      await prefs.setString(_storageKey, json.encode(_store.toJson()));
     } catch (e) {
       debugPrint('Analytics Save Error: $e');
     }
   }
 
-  void _registerSession() {
-    // Simple session logic: New session on app init
-    _data['sessions'] = (_data['sessions'] as int) + 1;
-    _data['last_seen'] = DateTime.now().toIso8601String();
-    _saveData();
+  void _startSessionIfNeeded() {
+    final now = DateTime.now();
+    bool newSession = false;
+
+    if (_store.lastSessionAt == null) {
+      newSession = true;
+    } else {
+      final lastSession = DateTime.parse(_store.lastSessionAt!);
+      final difference = now.difference(lastSession);
+      if (difference.inMinutes > 30) {
+        newSession = true;
+      }
+    }
+
+    if (newSession) {
+      _store.sessionsCount++;
+      _store.currentSessionId = now.millisecondsSinceEpoch.toString(); // Simple ID
+      _store.lastSessionAt = now.toIso8601String();
+      // Usually save here
+      _saveStore(); 
+    }
   }
 
   Future<void> trackScreenView(String routeName, {String? overrideModule}) async {
     if (!_initialized) await init();
-    
-    _lastRoute = routeName; // Update local state associated with getter
+    _startSessionIfNeeded(); // Check session on every interaction
 
-    // 1. Total Views
-    _data['total_views'] = (_data['total_views'] as int) + 1;
+    _lastRoute = routeName;
+    final now = DateTime.now().toIso8601String();
 
-    // 2. Views by Route
-    final routeCounts = _data['views_by_route'] as Map<String, int>;
-    routeCounts[routeName] = (routeCounts[routeName] ?? 0) + 1;
+    // Update stats
+    _store.totalScreenViews++;
+    _store.lastSeenAt = now;
+    _store.lastSessionAt = now; // Update session activity
 
-    // 3. Views by Module
+    // Route
+    final currentRouteCount = _store.viewsByRoute[routeName] ?? 0;
+    _store.viewsByRoute[routeName] = currentRouteCount + 1;
+
+    // Module
     final module = overrideModule ?? _determineModule(routeName);
     if (module != 'Other') {
-      final moduleCounts = _data['views_by_module'] as Map<String, int>;
-      moduleCounts[module] = (moduleCounts[module] ?? 0) + 1;
+      final currentModuleCount = _store.viewsByModule[module] ?? 0;
+      _store.viewsByModule[module] = currentModuleCount + 1;
     }
 
-    // 4. Daily Activity
-    final today = DateTime.now().toIso8601String().split('T')[0];
-    final dailyCounts = _data['daily_activity'] as Map<String, int>;
-    dailyCounts[today] = (dailyCounts[today] ?? 0) + 1;
+    // Daily
+    final today = now.split('T')[0];
+    final currentDaily = _store.dailyActivity[today] ?? 0;
+    _store.dailyActivity[today] = currentDaily + 1;
+    _pruneDailyActivity();
 
-    // Prune daily activity > 30 days
-    if (dailyCounts.length > 30) {
-       final sortedKeys = dailyCounts.keys.toList()..sort();
-       dailyCounts.remove(sortedKeys.first);
+    await _saveStore();
+  }
+
+  Future<void> trackEvent(String name, {Map<String, dynamic>? meta}) async {
+    if (!_initialized) await init();
+    _startSessionIfNeeded();
+
+    final count = _store.eventsCountByName[name] ?? 0;
+    _store.eventsCountByName[name] = count + 1;
+    _store.lastSeenAt = DateTime.now().toIso8601String();
+    
+    // Also track in daily activity? Usually screen views correspond to engagement, but events do too.
+    // user specification said "last7DaysDailyViews" - implying generic views or activity? 
+    // Usually daily views. Let's stick to screen views for daily chart to keep it clean.
+    
+    await _saveStore();
+  }
+
+  void _pruneDailyActivity() {
+    if (_store.dailyActivity.length > 7) { // 7 days roling as requested
+       final sortedKeys = _store.dailyActivity.keys.toList()..sort();
+       // Keep strict last 7
+       while (_store.dailyActivity.length > 7) {
+         _store.dailyActivity.remove(sortedKeys.first);
+         sortedKeys.removeAt(0);
+       }
     }
-
-    await _saveData();
   }
 
   String determineModule(String route) => _determineModule(route); // Public alias
-  
+
   String _determineModule(String route) {
     if (route.startsWith('/admin')) return 'Admin';
     if (route.startsWith('/hr') || route.startsWith('/human_resources') || route.contains('employee')) return 'RRHH';
@@ -116,22 +146,40 @@ class AnalyticsService {
   }
 
   Future<void> resetAnalytics() async {
-    _data = {
-      'total_views': 0,
-      'sessions': 1, // Current session remains
-      'last_seen': DateTime.now().toIso8601String(),
-      'views_by_route': <String, int>{},
-      'views_by_module': <String, int>{},
-      'daily_activity': <String, int>{},
-    };
-    await _saveData();
+    _store = AnalyticsStore(
+      firstSeenAt: DateTime.now().toIso8601String(),
+      lastSeenAt: DateTime.now().toIso8601String(),
+      // Keep session? "reset analytics" usually means clear stats.
+      sessionsCount: 0,
+    );
+    await _saveStore();
+
+    // Audit Log Integration
+    AuditLoggerService.instance.log(
+      'ANALYTICS_RESET',
+      entityType: 'System',
+      entityId: 'AnalyticsService',
+      summary: 'Reset analytics data to zero',
+      severity: 'warning',
+    );
   }
 
-  Map<String, dynamic> getStats() {
-    return _data;
+  AnalyticsStore getStats() {
+    return _store;
   }
 
   String exportToJson() {
-    return const JsonEncoder.withIndent('  ').convert(_data);
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(_store.toJson());
+    
+    // Audit Log Integration
+    AuditLoggerService.instance.log(
+      'ANALYTICS_EXPORT',
+      entityType: 'System',
+      entityId: 'AnalyticsService',
+      summary: 'Exported analytics data',
+      severity: 'info',
+    );
+    
+    return jsonStr;
   }
 }

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../components/neon_widgets.dart';
 import '../../components/how_to_use_card.dart';
+import '../../features/analytics/models/analytics_store.dart';
 import '../../features/analytics/services/analytics_service.dart';
 
 class AdminAnalyticsScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class AdminAnalyticsScreen extends StatefulWidget {
 
 class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
   late Future<void> _initFuture;
-  Map<String, dynamic> _stats = {};
+  AnalyticsStore _stats = AnalyticsStore(); // Typed Store
 
   @override
   void initState() {
@@ -67,14 +68,16 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final totalViews = _stats['total_views'] ?? 0;
-        final sessions = _stats['sessions'] ?? 0;
-        final lastSeen = _stats['last_seen'] != null 
-            ? DateTime.parse(_stats['last_seen']).toLocal().toString().split('.')[0]
+        final totalViews = _stats.totalScreenViews;
+        final sessions = _stats.sessionsCount;
+        final lastSeen = _stats.lastSeenAt != null 
+            ? DateTime.parse(_stats.lastSeenAt!).toLocal().toString().split('.')[0]
             : 'Nunca';
         
-        final Map<String, int> viewsByModule = Map<String, int>.from(_stats['views_by_module'] ?? {});
-        final Map<String, int> viewsByRoute = Map<String, int>.from(_stats['views_by_route'] ?? {});
+        final viewsByModule = _stats.viewsByModule;
+        final viewsByRoute = _stats.viewsByRoute;
+        final topEvents = _stats.eventsCountByName.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
 
         // Sort Top Routes
         final topRoutes = viewsByRoute.entries.toList()
@@ -85,12 +88,12 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Row
+              // Header Row (Previous code...)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Analítica V2 (Real)',
+                    'Analítica V2.1 (Real)',
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 24,
@@ -123,14 +126,13 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
 
               // How to Use Card
               const HowToUseCard(
-                title: 'Analítica Local en Tiempo Real',
-                icon: Icons.track_changes,
+                title: 'Analítica Pro en Tiempo Real',
+                icon: Icons.insights,
                 accentColor: Color(0xFF00E5FF),
                 steps: [
-                  'Estos datos son reales y se guardan en tu dispositivo.',
-                  'Navega por la app para ver cómo aumentan los contadores.',
-                  '"Vistas Totales" cuenta cada cambio de pantalla.',
-                  '"Top Rutas" te muestra qué pantallas visitas más.',
+                  'Datos persistentes y session-aware (30min timeout).',
+                  'Registra "Eventos" además de vistas de pantalla.',
+                  'Integración total con Audit Logs para seguridad.',
                 ],
               ),
 
@@ -141,12 +143,36 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
                 spacing: 16,
                 runSpacing: 16,
                 children: [
-                  _buildKpiCard('Vistas Totales', '$totalViews', 'Total acumulado', Colors.blue),
-                  _buildKpiCard('Sesiones', '$sessions', 'Inicios de app', Colors.green),
+                  _buildKpiCard('Vistas Totales', '$totalViews', 'Screen Views', Colors.blue),
+                  _buildKpiCard('Sesiones', '$sessions', 'Unique Sessions', Colors.green),
                   _buildKpiCard('Última Actividad', lastSeen, 'Timestamp', Colors.orange),
-                  _buildKpiCard('Rutas Únicas', '${viewsByRoute.length}', 'Pantallas visitadas', Colors.purple),
+                  _buildKpiCard('Eventos', '${_stats.eventsCountByName.length}', 'Tipos de eventos', Colors.pinkAccent),
                 ],
               ),
+              
+              const SizedBox(height: 32),
+              
+              // Top Events (New Section)
+               if (topEvents.isNotEmpty) ...[
+                const NeonSectionTitle(title: 'Top Eventos del Sistema', color: Colors.white),
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    children: topEvents.take(5).map((e) => ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.touch_app, color: Colors.pinkAccent, size: 16),
+                      title: Text(e.key, style: GoogleFonts.outfit(color: Colors.white)),
+                      trailing: Text('${e.value}', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                    )).toList(),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
               
               const SizedBox(height: 32),
               
