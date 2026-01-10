@@ -191,7 +191,7 @@ const List<GuideQuestion> allQuestions = [
     id: 19,
     text: '¿Planeas contratar personal pronto?',
     type: GuideQuestionType.single,
-    options: ['Sí', 'No, quiero ser solopreneur al inicio'],
+    options: ['Sí', 'No, quiero emprender solo al inicio'],
     mappings: [
       AttributeMapping(attribute: 'escalabilidad', valueMap: {0: 8, 1: 3}),
     ],
@@ -383,23 +383,27 @@ const List<GuideQuestion> allQuestions = [
 // Helper to get curated list
 List<GuideQuestion> getQuestionsForLevel(int level) {
   // 25 Questions (Rapido + Some Intermedio essential to reach 25)
-  // Logic: priority 'rapido' are essential.
-  // There are ~17 'rapido' marked above. We need 25.
-  // We will grab all 'rapido' + first few 'intermedio' to make 25.
-  
   if (level == 25) {
     var core = allQuestions.where((q) => q.priority == 'rapido').toList();
-    var extra = allQuestions.where((q) => q.priority == 'intermedio').take(25 - core.length).toList();
+    int needed = 25 - core.length;
+    var extra = <GuideQuestion>[];
+    if (needed > 0) {
+       extra = allQuestions.where((q) => q.priority == 'intermedio').take(needed).toList();
+    }
     return [...core, ...extra];
   }
   
   // 50 Questions
   if (level == 50) {
     var core = allQuestions.where((q) => q.priority == 'rapido' || q.priority == 'intermedio').toList();
-    var extra = allQuestions.where((q) => q.priority == 'avanzado').take(50 - core.length).toList();
+    int needed = 50 - core.length;
+    var extra = <GuideQuestion>[];
+    if (needed > 0) {
+       extra = allQuestions.where((q) => q.priority == 'avanzado').take(needed).toList();
+    }
     return [...core, ...extra];
   }
   
   // 70 Questions (All)
-  return allQuestions;
+  return allQuestions.toList();
 }

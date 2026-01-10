@@ -43,76 +43,39 @@ class _GuideMasterScreenState extends State<GuideMasterScreen> {
     });
   }
 
+  // Intro State
+  int _introTabIndex = 0;
+
   Future<void> _startWizard() async {
     if (!_disclaimerAccepted) {
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes aceptar el aviso legal para continuar.')));
        return;
     }
     
-    // Save disclaimer acceptance
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('guide_master_disclaimer_accepted', true);
-    await prefs.setString('guide_master_disclaimer_accepted_at', DateTime.now().toIso8601String());
+    try {
+      // Save disclaimer acceptance
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('guide_master_disclaimer_accepted', true);
+      await prefs.setString('guide_master_disclaimer_accepted_at', DateTime.now().toIso8601String());
 
-    setState(() {
-      _activeQuestions = getQuestionsForLevel(_selectedLevel);
-      _currentIndex = 0;
-      _answers.clear();
-      _activeQuestions.shuffle(); // Optional: shuffle if order doesn't matter, but prompt said "curated set". Let's keep order.
-      // Actually prompt implies specific order might be good, but our getQuestions returns a list.
-      // We'll keep the list order from the getter.
-      _step = 1;
-    });
-  }
-
-  void _submitAnswer(dynamic value) {
-    if (_activeQuestions.isEmpty) return;
-    
-    final q = _activeQuestions[_currentIndex];
-    setState(() {
-      _answers[q.id] = value;
-      
-      if (_currentIndex < _activeQuestions.length - 1) {
-        _currentIndex++;
-      } else {
-        _calculateAndShowResults();
+      final questions = getQuestionsForLevel(_selectedLevel);
+      if (questions.isEmpty) {
+        throw Exception("No se pudieron cargar las preguntas para el nivel seleccionado.");
       }
-    });
-  }
-  
-  void _calculateAndShowResults() {
-    var results = GuideMasterScoring.calculate(_answers);
-    setState(() {
-      _result = results;
-      _step = 2;
-    });
-  }
-  
-  void _resetWizard() {
-    setState(() {
-      _step = 0;
-      _result = null;
-    });
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return PremiumScaffold(
-      title: 'GUÍA MAESTRA PRO',
-      isNeonTitle: true,
-      showBackButton: true,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        child: _buildBody(),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_step == 0) return _buildIntroScreen();
-    if (_step == 1) return _buildWizardScreen();
-    if (_step == 2) return _buildResultsScreen();
-    return const SizedBox.shrink();
+      setState(() {
+        _activeQuestions = questions;
+        _currentIndex = 0;
+        _answers.clear();
+        _activeQuestions.shuffle();
+        _step = 1;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error al iniciar el test: $e'),
+        backgroundColor: Colors.red,
+      ));
+    }
   }
 
   // --- STEP 0: INTRO ---
@@ -122,14 +85,51 @@ class _GuideMasterScreenState extends State<GuideMasterScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildNeonHeader('Elige tu nivel de profundidad'),
+          _buildNeonHeader('GUÍA DE NEGOCIOS 2026'),
+          const SizedBox(height: 24),
+          
+          // --- INFO TABS ---
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    _buildTabBtn(0, 'Ventajas', Icons.thumb_up),
+                    _buildTabBtn(1, 'Checklist', Icons.checklist),
+                    _buildTabBtn(2, 'Matriz', Icons.grid_view),
+                  ],
+                ),
+                Container(height: 1, color: Colors.white10),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _buildIntroTabContent(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 40),
+          const Divider(color: Colors.white12),
           const SizedBox(height: 20),
+
+          Text(
+            'CONFIGURA TU DIAGNÓSTICO',
+            style: GoogleFonts.outfit(color: EmpoderateTheme.gold, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
+          ),
+          const SizedBox(height: 16),
           
           _buildLevelOption(25, 'RÁPIDO (Esencial)', 'Test ágil de 5 mins. Cubre los 10 atributos clave para una recomendación sólida.'),
           _buildLevelOption(50, 'INTERMEDIO (Precisión)', 'Añade preguntas de desempate y estilo de vida. Ideal si tienes dudas específicas.'),
           _buildLevelOption(70, 'AVANZADO (Completo)', 'El análisis más profundo. Audita tu perfil psicológico, financiero y operativo al 100%.'),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -194,6 +194,200 @@ class _GuideMasterScreenState extends State<GuideMasterScreen> {
       ),
     );
   }
+
+  Widget _buildTabBtn(int index, String label, IconData icon) {
+    bool isActive = _introTabIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _introTabIndex = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: isActive ? EmpoderateTheme.goldStrong : Colors.transparent, width: 2)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isActive ? EmpoderateTheme.goldStrong : Colors.white54, size: 20),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: isActive ? Colors.white : Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntroTabContent() {
+    if (_introTabIndex == 0) {
+      return Column(
+        key: const ValueKey('tab0'),
+        children: [
+          _buildInfoCard('Comida/Restaurantes', 'Alta demanda diaria, flujo de efectivo constante.', 'Alta competencia, perecederos (merma), horarios esclavizantes.', Icons.restaurant),
+          const SizedBox(height: 12),
+          _buildInfoCard('Tienda/Comercio', 'Fácil de escalar, menos dependencia de tu tiempo directo.', 'Inventario estancado, márgenes bajos si revendes.', Icons.store),
+          const SizedBox(height: 12),
+          _buildInfoCard('Servicios/Digital', 'Baja inversión inicial, altos márgenes, trabajo remoto.', 'Venta intangible más difícil, alta competencia global.', Icons.laptop_mac),
+          const SizedBox(height: 12),
+          _buildInfoCard('Belleza/Eventos', 'Clientes fieles, propinas/extras, satisfacción creativa.', 'Físicamente agotador, lidiar con clientes difíciles.', Icons.brush),
+        ],
+      );
+    } 
+    if (_introTabIndex == 1) {
+      return Column(
+        key: const ValueKey('tab1'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('10 DECISIONES CLAVE', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 12),
+          ...[
+            '¿Qué problema resuelves realmente?',
+            '¿Quién es tu cliente ideal (Avatar)?',
+            '¿Cuánto capital tienes vs. necesitas?',
+            '¿Producto físico o Servicio intangible?',
+            '¿Local físico, Digital o Híbrido?',
+            '¿Solo o con socios?',
+            '¿Nombre y marca disponible?',
+            '¿Permisos legales requeridos?',
+            '¿Estrategia de precios (Barato vs Premium)?',
+            '¿Plan de salida si falla?',
+          ].map((t) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [Icon(Icons.check_box_outline_blank, color: EmpoderateTheme.gold, size: 16), SizedBox(width: 8), Expanded(child: Text(t, style: TextStyle(color: Colors.white70, fontSize: 13)))]),
+          )),
+        ],
+      );
+    }
+    // Matrix
+    return Column(
+      key: const ValueKey('tab2'),
+      children: [
+        Text('MATRIZ: INVERSIÓN VS COMPLEJIDAD', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 16),
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white24),
+            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              colors: [Colors.blue.withOpacity(0.1), Colors.red.withOpacity(0.1)],
+              begin: Alignment.bottomLeft,
+              end: Alignment.topRight
+            )
+          ),
+          child: Stack(
+            children: [
+              // Axis Labels
+              Positioned(bottom: 8, right: 8, child: Text("Alta Inversión", style: TextStyle(color: Colors.white30, fontSize: 10))),
+              Positioned(top: 8, left: 8, child: Text("Alta Complejidad", style: TextStyle(color: Colors.white30, fontSize: 10))),
+              
+              // Quadrants
+              Positioned(top: 30, right: 30, child: _buildMatrixLabel("Bienes Raíces\nFranquicias", Colors.redAccent)),
+              Positioned(bottom: 30, left: 30, child: _buildMatrixLabel("Freelance\nDigital", Colors.greenAccent)),
+              Positioned(top: 30, left: 30, child: _buildMatrixLabel("Restaurante\nFábrica", Colors.orangeAccent)),
+              Positioned(bottom: 30, right: 30, child: _buildMatrixLabel("Dropshipping\nRevenda", Colors.blueAccent)),
+              
+              Center(child: Container(width: 1, height: 180, color: Colors.white10)),
+              Center(child: Container(height: 1, width: 280, color: Colors.white10)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('Eje X: Inversión  |  Eje Y: Complejidad Operativa', style: TextStyle(color: Colors.white38, fontSize: 11)),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard(String title, String pro, String con, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: EmpoderateTheme.gold, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text('✅ $pro', style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text('⚠️ $con', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatrixLabel(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: color.withOpacity(0.5))),
+      child: Text(text, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  void _submitAnswer(dynamic value) {
+    if (_activeQuestions.isEmpty) return;
+    
+    final q = _activeQuestions[_currentIndex];
+    setState(() {
+      _answers[q.id] = value;
+      
+      if (_currentIndex < _activeQuestions.length - 1) {
+        _currentIndex++;
+      } else {
+        _calculateAndShowResults();
+      }
+    });
+  }
+  
+  void _calculateAndShowResults() {
+    var results = GuideMasterScoring.calculate(_answers);
+    setState(() {
+      _result = results;
+      _step = 2;
+    });
+  }
+  
+  void _resetWizard() {
+    setState(() {
+      _step = 0;
+      _result = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumScaffold(
+      title: 'GUÍA MAESTRA PRO',
+      isNeonTitle: true,
+      showBackButton: true,
+      useScroll: false, // Critical: We handle scroll internally per step (Wizard needs fixed height for Spacer)
+      usePadding: false, // We handle padding internally
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_step == 0) return _buildIntroScreen();
+    if (_step == 1) return _buildWizardScreen();
+    if (_step == 2) return _buildResultsScreen();
+    return const SizedBox.shrink();
+  }
+
+
   
   Widget _buildLevelOption(int level, String title, String desc) {
     bool isSelected = _selectedLevel == level;

@@ -7,7 +7,7 @@ class AttributeMapping {
   /// For multi-select, presence of index triggers impact.
   final Map<int, double>? valueMap; 
 
-  AttributeMapping({
+  const AttributeMapping({
     required this.attribute,
     this.weight = 1.0,
     this.valueMap,
