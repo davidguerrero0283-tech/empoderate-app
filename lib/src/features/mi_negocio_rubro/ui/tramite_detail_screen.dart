@@ -276,9 +276,17 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
               _buildEmptyState(),
             
 
+            // --- DESCRIPTION SECTION (NEW) ---
+            if (detail.descripcionCompleta != null && detail.descripcionCompleta!.isNotEmpty)
+              _buildDescriptionSection(detail.descripcionCompleta!),
+
             // TIPS SECTION (Redesigned)
             if (detail.tips.isNotEmpty)
               _buildTipsSection(detail.tips),
+
+            // IMPORTANT NOTES SECTION (NEW)
+            if (detail.notasImportantes.isNotEmpty)
+              _buildNotasImportantesSection(detail.notasImportantes),
 
             // SOURCE SECTION (PROMPT 99)
             if (detail.fuente != null)
@@ -513,6 +521,66 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
                children: [
                  const Text('• ', style: TextStyle(color: Colors.amber, fontSize: 16)),
                  Expanded(child: Text(tip, style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14, height: 1.4))),
+               ],
+             ),
+           )).toList()
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionSection(String description) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.info_outline, color: Colors.blueAccent, size: 20),
+            const SizedBox(width: 8),
+            Text('¿QUÉ ES ESTE TRÁMITE?', style: GoogleFonts.outfit(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+          ]),
+          const SizedBox(height: 12),
+          Text(
+            description.trim(), 
+            style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14, height: 1.6)
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotasImportantesSection(List<String> notas) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [ Colors.redAccent.withOpacity(0.15), Colors.redAccent.withOpacity(0.05) ]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Row(children: [
+             Icon(Icons.warning_amber, color: Colors.redAccent, size: 20),
+             const SizedBox(width: 8),
+             Text('NOTAS IMPORTANTES', style: GoogleFonts.outfit(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+           ]),
+           const SizedBox(height: 12),
+           ...notas.map((nota) => Padding(
+             padding: const EdgeInsets.only(bottom: 8),
+             child: Row(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 const Text('⚠ ', style: TextStyle(color: Colors.redAccent, fontSize: 14)),
+                 Expanded(child: Text(nota, style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14, height: 1.4))),
                ],
              ),
            )).toList()
