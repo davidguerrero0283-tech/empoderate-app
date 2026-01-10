@@ -15,6 +15,7 @@ import '../screens/tools_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/auth_screen.dart';
 import '../screens/not_found_screen.dart';
+import '../screens/router_error_screen.dart'; // NEW
 import '../screens/under_construction_screen.dart'; // NEW
 
 // Screens - Main Sections
@@ -80,6 +81,8 @@ import 'package:proyecto_empoderate/features/ai_shared/domain/ai_shared_types.da
 
 // Business & Checklist
 import '../screens/mi_negocio_rubro_screen.dart';
+import '../features/mi_negocio_rubro/ui/rubro_detail_screen.dart'; 
+import '../features/mi_negocio_rubro/ui/tramite_detail_screen.dart';
 import '../screens/checklist/checklist_hub_screen.dart';
 import '../features/checklist/screens/checklist_rubro_selection_screen.dart';
 import '../features/checklist/screens/checklist_rubro_detail_screen.dart';
@@ -206,31 +209,7 @@ class AppRouter {
     ],
     
     // Error handler for unknown routes
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(
-              'Ruta no encontrada',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.uri.toString(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => context.go('/'),
-              child: const Text('Volver al Inicio'),
-            ),
-          ],
-        ),
-      ),
-    ),
+    errorBuilder: (context, state) => RouterErrorScreen(state: state),
 
     routes: [
       // ========== SHELL ROUTE (Bottom Navigation) ==========
@@ -793,18 +772,29 @@ class AppRouter {
             builder: (context, state) {
               final categoryId = state.pathParameters['categoryId'] ?? '';
               final rubroId = state.pathParameters['rubroId'] ?? '';
+              
               final category = categoryData.firstWhere(
                 (c) => c.id == categoryId,
                 orElse: () => categoryData.first,
               );
+              
               final rubro = category.rubros.firstWhere(
                 (r) => r.id == rubroId,
                 orElse: () => category.rubros.first,
               );
-              return ChecklistRubroDetailScreen(
+              
+              return RubroDetailScreen(
+                categoryId: categoryId,
                 rubroId: rubroId,
-                title: rubro.name,
               );
+            },
+          ),
+          GoRoute(
+            path: 'tramite/:tramiteId',
+            name: 'rubro_tramite_detail',
+            builder: (context, state) {
+               final tramiteId = state.pathParameters['tramiteId'] ?? '';
+               return TramiteDetailScreen(tramiteId: tramiteId);
             },
           ),
         ],

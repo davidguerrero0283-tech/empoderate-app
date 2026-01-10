@@ -19,11 +19,14 @@ class AnalyticsStore {
     this.firstSeenAt,
     this.currentSessionId,
     this.lastSessionAt,
-    this.viewsByRoute = const {},
-    this.viewsByModule = const {},
-    this.dailyActivity = const {},
-    this.eventsCountByName = const {},
-  });
+    Map<String, int>? viewsByRoute,
+    Map<String, int>? viewsByModule,
+    Map<String, int>? dailyActivity,
+    Map<String, int>? eventsCountByName,
+  }) : viewsByRoute = viewsByRoute ?? {},
+       viewsByModule = viewsByModule ?? {},
+       dailyActivity = dailyActivity ?? {},
+       eventsCountByName = eventsCountByName ?? {};
 
   factory AnalyticsStore.fromJson(Map<String, dynamic> json) {
     return AnalyticsStore(
