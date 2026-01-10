@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/premium_scaffold.dart';
 import '../components/employee_card_compact.dart';
@@ -21,6 +22,7 @@ class EmployeesGridScreen extends StatefulWidget {
 
 class _EmployeesGridScreenState extends State<EmployeesGridScreen> {
   final WorkerService _service = WorkerService();
+  Map<String, int> _workerIndices = {};
   List<WorkerProfile> _workers = [];
   List<WorkerProfile> _filteredWorkers = [];
   bool _isLoading = true;
@@ -28,7 +30,7 @@ class _EmployeesGridScreenState extends State<EmployeesGridScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
-
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -40,6 +42,7 @@ class _EmployeesGridScreenState extends State<EmployeesGridScreen> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -51,6 +54,7 @@ class _EmployeesGridScreenState extends State<EmployeesGridScreen> {
         setState(() {
           _workers = workers;
           _filteredWorkers = workers;
+          _workerIndices = {for (int i = 0; i < workers.length; i++) workers[i].id: i};
           _isLoading = false;
         });
       }
@@ -62,18 +66,22 @@ class _EmployeesGridScreenState extends State<EmployeesGridScreen> {
   }
 
   void _filterWorkers(String query) {
-    setState(() {
-      _searchQuery = query;
-      if (query.isEmpty) {
-        _filteredWorkers = _workers;
-      } else {
-        _filteredWorkers = _workers.where((w) {
-          final nameLower = w.name.toLowerCase();
-          final positionLower = w.position.toLowerCase();
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() {
+        _searchQuery = query;
+        if (query.isEmpty) {
+          _filteredWorkers = _workers;
+        } else {
           final queryLower = query.toLowerCase();
-          return nameLower.contains(queryLower) || positionLower.contains(queryLower);
-        }).toList();
-      }
+          _filteredWorkers = _workers.where((w) {
+            final nameLower = w.name.toLowerCase();
+            final positionLower = w.position.toLowerCase();
+            return nameLower.contains(queryLower) || positionLower.contains(queryLower);
+          }).toList();
+        }
+      });
     });
   }
 
@@ -102,6 +110,7 @@ class _EmployeesGridScreenState extends State<EmployeesGridScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
+              key: const PageStorageKey('employees_grid_scroll'),
               slivers: [
                 SliverToBoxAdapter(
                   child: BusinessHeroHeader(
@@ -286,7 +295,7 @@ class _EmployeesGridScreenState extends State<EmployeesGridScreen> {
                     (context, index) {
                       if (index >= _filteredWorkers.length) return null;
                       final worker = _filteredWorkers[index];
-                      final originalIndex = _workers.indexOf(worker);
+                      final originalIndex = _workerIndices[worker.id] ?? index;
 
                       return Padding(
                         padding: const EdgeInsets.only(left: 20, right: 20, bottom: 10),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
@@ -43,31 +44,48 @@ class _ShiftLoggerScreenState extends State<ShiftLoggerScreen> {
   List<ShiftRecord> _shifts = [];
   bool _isLoading = false;
   bool _showHelp = true;
-  bool _isLoadingWorker = false; // NEW
-  WorkerProfile? _loadedWorker; // NEW
+  bool _isLoadingWorker = false;
+  bool _workerNotFound = false; // NEW: Track if workerId was given but not found
+  WorkerProfile? _loadedWorker;
 
   @override
   void initState() {
     super.initState();
     _loadedWorker = widget.worker;
     
+    // DEBUG: Log workerId received
+    debugPrint('🔍 ShiftLoggerScreen initState - workerId: ${widget.workerId}, worker: ${widget.worker?.name}');
+    
     // Deep link support: load worker by ID if needed
     if (_loadedWorker == null && widget.workerId != null && widget.workerId!.isNotEmpty) {
+      debugPrint('🔍 ShiftLoggerScreen: Loading worker by ID: ${widget.workerId}');
       _loadWorkerById(widget.workerId!);
     } else {
       _initShifts();
     }
   }
   
-  /// NEW: Load worker by ID for deep link support
+  /// Load worker by ID for deep link support
   Future<void> _loadWorkerById(String workerId) async {
-    setState(() => _isLoadingWorker = true);
+    setState(() {
+      _isLoadingWorker = true;
+      _workerNotFound = false;
+    });
     try {
       final worker = await WorkerService().getWorkerById(workerId);
-      if (worker != null && mounted) {
-        setState(() => _loadedWorker = worker);
-        _initShifts();
+      if (mounted) {
+        if (worker != null) {
+          debugPrint('✅ ShiftLoggerScreen: Worker loaded successfully: ${worker.name}');
+          setState(() => _loadedWorker = worker);
+          _initShifts();
+        } else {
+          debugPrint('❌ ShiftLoggerScreen: Worker NOT FOUND for id: $workerId');
+          setState(() => _workerNotFound = true);
+        }
       }
+    } catch (e) {
+      debugPrint('❌ Error loading worker for shifts: $e');
+      if (mounted) setState(() => _workerNotFound = true);
     } finally {
       if (mounted) setState(() => _isLoadingWorker = false);
     }
@@ -158,27 +176,105 @@ class _ShiftLoggerScreenState extends State<ShiftLoggerScreen> {
     if (_isLoadingWorker) {
       return PremiumScaffold(
         title: 'Registro de Turnos',
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-    
-    // Show empty state if no worker
-    if (_currentWorker == null) {
-      return PremiumScaffold(
-        title: 'Registro de Turnos',
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.person_off, size: 64, color: Colors.white38),
+              const CircularProgressIndicator(color: kNeonCyan),
               const SizedBox(height: 16),
-              Text('No se encontró el colaborador', style: TextStyle(color: Colors.white70)),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Volver'),
-              ),
+              Text('Cargando datos del empleado...', 
+                style: GoogleFonts.outfit(color: Colors.white70)),
             ],
+          ),
+        ),
+      );
+    }
+    
+    // Show error state if workerId was given but not found
+    if (_workerNotFound) {
+      return PremiumScaffold(
+        title: 'Registro de Turnos',
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_off, size: 48, color: Colors.red),
+                ),
+                const SizedBox(height: 20),
+                Text('Empleado no encontrado', 
+                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('El ID "${widget.workerId}" no existe en el directorio.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(color: Colors.white54, fontSize: 14)),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/hr/employees');
+                    }
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Volver al Directorio'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kNeonCyan,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Show select worker state if no worker provided
+    if (_currentWorker == null) {
+      return PremiumScaffold(
+        title: 'Registro de Turnos',
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kNeonGold.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_search, size: 48, color: kNeonGold),
+                ),
+                const SizedBox(height: 20),
+                Text('Empleado: No seleccionado', 
+                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Selecciona un empleado desde el directorio para registrar sus turnos.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(color: Colors.white54, fontSize: 14)),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => context.push('/hr/employees'),
+                  icon: const Icon(Icons.people),
+                  label: const Text('Ir al Directorio de Empleados'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kNeonGold,
+                    foregroundColor: Colors.black,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -214,6 +310,25 @@ class _ShiftLoggerScreenState extends State<ShiftLoggerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // === DEBUG BANNER (only in debug mode) ===
+            if (kDebugMode)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.yellow.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.yellow),
+                ),
+                child: Text(
+                  'DEBUG: workerId="${widget.workerId ?? "NULL"}" | worker="${_currentWorker?.name ?? "NULL"}"',
+                  style: const TextStyle(color: Colors.yellow, fontSize: 11, fontFamily: 'monospace'),
+                ),
+              ),
+            
+            // === EMPLOYEE CONTEXT HEADER ===
+            _buildEmployeeContextHeader(),
+            
             // === HELP PANEL ===
             if (_showHelp) _buildHelpPanel(),
             
@@ -687,6 +802,74 @@ class _ShiftLoggerScreenState extends State<ShiftLoggerScreen> {
               style: GoogleFonts.outfit(color: Colors.white38, fontSize: 11),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  // ========= EMPLOYEE CONTEXT HEADER =========
+  Widget _buildEmployeeContextHeader() {
+    final worker = _currentWorker;
+    if (worker == null) return const SizedBox.shrink();
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kNeonCyan.withOpacity(0.15), kNeonBlue.withOpacity(0.08)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kNeonCyan.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: kNeonCyan.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                worker.name.isNotEmpty ? worker.name[0].toUpperCase() : '?',
+                style: GoogleFonts.outfit(
+                  color: kNeonCyan,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Empleado: ${worker.name}',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (worker.position.isNotEmpty)
+                  Text(
+                    worker.position,
+                    style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+                  ),
+                const SizedBox(height: 4),
+                Text(
+                  '📝 Registrando turnos para este empleado',
+                  style: GoogleFonts.outfit(color: kNeonCyan, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

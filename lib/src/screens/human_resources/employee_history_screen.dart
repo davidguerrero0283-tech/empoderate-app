@@ -13,11 +13,13 @@ import '../../services/worker_service.dart';
 class EmployeeHistoryScreen extends StatefulWidget {
   final String workerId;
   final WorkerProfile? worker; // Optional pre-loaded worker
+  final String? initialTab; // NEW: Support for specific tab (e.g., 'payroll')
 
   const EmployeeHistoryScreen({
     Key? key,
     required this.workerId,
     this.worker,
+    this.initialTab,
   }) : super(key: key);
 
   @override
@@ -30,11 +32,20 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen>
   final WorkerService _service = WorkerService();
   WorkerProfile? _worker;
   bool _isLoading = true;
+  bool _hasError = false; // NEW: Track error state separately
+  String? _errorMsg;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    
+    // Set initial tab safely
+    if (widget.initialTab == 'payroll') _tabController.index = 0;
+    else if (widget.initialTab == 'vacation') _tabController.index = 1;
+    else if (widget.initialTab == 'decimo') _tabController.index = 2; // Default to 0 or specific index for decimo if needed, usually 2 but check tabs order
+
+    // Force load if worker not provided
     if (widget.worker != null) {
       _worker = widget.worker;
       _isLoading = false;
@@ -50,47 +61,119 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen>
   }
 
   Future<void> _loadWorker() async {
-    try {
-      final workers = await _service.getWorkers();
-      final worker = workers.firstWhere((w) => w.id == widget.workerId);
+    // 1. Initial validation
+    if (widget.workerId.isEmpty) {
       if (mounted) {
         setState(() {
-          _worker = worker;
+          _hasError = true;
+          _errorMsg = "ID de empleado no válido";
           _isLoading = false;
         });
       }
-    } catch (e) {
+      return;
+    }
+    
+    try {
+      // 2. Async Load
+      final workers = await _service.getWorkers();
+      
+      // 3. Safe Lookup using cast + orElse
+      final WorkerProfile? found = workers
+          .cast<WorkerProfile?>()
+          .firstWhere((w) => w?.id == widget.workerId, orElse: () => null);
+      
+      if (!mounted) return;
+
+      // 4. Handle Result
+      if (found != null) {
+        setState(() {
+          _worker = found;
+          _hasError = false;
+          _errorMsg = null;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _hasError = true;
+          _errorMsg = "Empleado no encontrado";
+          _isLoading = false;
+        });
+      }
+
+    } catch (e, st) {
+      debugPrint('❌ Error loading worker: $e\n$st');
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _hasError = true;
+          _errorMsg = "Error al cargar: $e";
+          _isLoading = false;
+        });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // GUARANTEE: Always return a Scaffold
     return PremiumScaffold(
       title: 'Historial Laboral',
       showBranding: true,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _worker == null
-              ? _buildErrorState()
-              : Column(
-                  children: [
-                    _buildWorkerHeader(),
-                    _buildTabBar(),
-                    Expanded(
-                      child: TabBarView(
-controller: _tabController,
-                        children: [
-                          _buildPayrollTab(),
-                          _buildVacationTab(),
-                          _buildDecimoTab(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+      useScroll: false, // CRITICAL: Allow Expanded/TabBarView to work
+      usePadding: false, // CRITICAL: We manage padding inside children
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    if (_hasError || _worker == null) {
+      return _buildErrorState();
+    }
+    
+    // FASE B: Single View Mode for 'payroll'
+    // If tab param is 'payroll', we show ONLY the payroll list, no tabs.
+    if (widget.initialTab == 'payroll') {
+      return Column(
+        children: [
+          _buildWorkerHeader(), // Keep identity info
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            color: const Color(0xFF0F1520),
+            child: Text(
+              'Historial de Planillas',
+              style: GoogleFonts.outfit(
+                color: kNeonGreen,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ),
+          Expanded(child: _buildPayrollTab()), // Reuse existing list builder
+        ],
+      );
+    }
+    
+    // Default: Full History with Tabs
+    return Column(
+      children: [
+        _buildWorkerHeader(),
+        _buildTabBar(),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildPayrollTab(),
+              _buildVacationTab(),
+              _buildDecimoTab(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -560,14 +643,48 @@ controller: _tabController,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: const Icon(Icons.person_off, size: 48, color: Colors.red),
+            ),
+            const SizedBox(height: 24),
             Text(
-              'Error al cargar empleado',
+              _errorMsg ?? 'Empleado no encontrado',
               style: GoogleFonts.outfit(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'El ID "${widget.workerId}" generó un problema o no existe.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                color: Colors.white54,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/hr/employees');
+                }
+              },
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Volver al Directorio'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kNeonBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],

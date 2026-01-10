@@ -236,9 +236,9 @@ class LiquidacionDashboard extends StatelessWidget {
           AspectRatio(
             aspectRatio: 1,
             child: CustomPaint(
-              painter: _LiquidacionRadialPainter(
-                prestacionesPercent: (prestaciones / safeTotal).clamp(0.0, 1.0),
-                derechosPercent: (derechos / safeTotal).clamp(0.0, 1.0),
+                  painter: _LiquidacionRadialPainter(
+                prestacionesPercent: (prestaciones.isFinite && safeTotal.isFinite ? (prestaciones / safeTotal) : 0.0).clamp(0.0, 1.0),
+                derechosPercent: (derechos.isFinite && safeTotal.isFinite ? (derechos / safeTotal) : 0.0).clamp(0.0, 1.0),
               ),
               child: Center(
                 child: Column(

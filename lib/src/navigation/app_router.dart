@@ -28,6 +28,7 @@ import '../screens/library_screen.dart';
 // Calculators
 import '../screens/calculadoras_screen.dart';
 import '../screens/calculators/liquidacion_screen.dart';
+import '../screens/calculators/liquidacion_route_probe_screen.dart'; // TEMP PROBE
 import '../screens/calculators/salario_screen.dart';
 import '../screens/calculators/vacation_calculator_screen.dart';
 import '../screens/calculators/decimo_calculator_screen.dart';
@@ -335,7 +336,8 @@ class AppRouter {
         name: 'employee_history',
         builder: (context, state) {
           final workerId = state.pathParameters['workerId'] ?? '';
-          return EmployeeHistoryScreen(workerId: workerId);
+          final tab = state.uri.queryParameters['tab'];
+          return EmployeeHistoryScreen(workerId: workerId, initialTab: tab);
         },
       ),
       GoRoute(
@@ -364,7 +366,10 @@ class AppRouter {
       GoRoute(
         path: '/payroll_history',
         name: 'payroll_history',
-        builder: (context, state) => const PayrollHistoryScreen(),
+        builder: (context, state) {
+          final workerId = state.uri.queryParameters['workerId'];
+          return PayrollHistoryScreen(initialWorkerId: workerId);
+        },
       ),
 
       // ========== CALCULATORS (CRITICAL: Support workerId query param) ==========

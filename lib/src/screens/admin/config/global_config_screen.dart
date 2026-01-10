@@ -76,6 +76,7 @@ class _GlobalConfigScreenState extends State<GlobalConfigScreen> {
     return PremiumScaffold(
       title: 'Configuración Global',
       showBackButton: false,
+      useScroll: false,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

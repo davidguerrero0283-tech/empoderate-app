@@ -39,14 +39,15 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _resultsKey = GlobalKey(); // Key for auto-scroll to results
 
-  final LiquidacionInputModel _input = LiquidacionInputModel(
+  LiquidacionInputModel _input = LiquidacionInputModel(
     startDate: DateTime.now().subtract(const Duration(days: 365)),
     endDate: DateTime.now(),
   );
 
   LiquidacionResultModel? _result;
   bool _isLoading = false;
-  bool _isLoadingWorker = false; // NEW: Loading state for worker fetch
+  bool _isLoadingWorker = false; // Loading state for worker fetch
+  bool _workerNotFound = false; // NEW: Track if workerId was given but worker not found
   
   // History Mode State
   bool _isLoadingFromWorker = false;
@@ -67,30 +68,56 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
 
   @override
   void initState() {
+    debugPrint('🔧 LiquidacionScreen.initState() STARTING');
     super.initState();
-    _nameCtrl = TextEditingController(text: _input.workerName);
-    _idCtrl = TextEditingController(text: _input.workerId);
-    _salaryCtrl = TextEditingController(text: _input.salary > 0 ? _input.salary.toString() : '');
-    _vencidosCtrl = TextEditingController(text: _input.vacacionesExpiredDays.toString());
-    _accumulatedVacationsCtrl = TextEditingController(text: _input.accumulatedIncomeVacations.toString());
-    _accumulatedDecimoCtrl = TextEditingController(text: _input.accumulatedIncomeDecimo.toString());
+    try {
+      _nameCtrl = TextEditingController(text: _input.workerName);
+      _idCtrl = TextEditingController(text: _input.workerId);
+      _salaryCtrl = TextEditingController(text: _input.salary > 0 ? _input.salary.toString() : '');
+      _vencidosCtrl = TextEditingController(text: _input.vacacionesExpiredDays.toString());
+      _accumulatedVacationsCtrl = TextEditingController(text: _input.accumulatedIncomeVacations.toString());
+      _accumulatedDecimoCtrl = TextEditingController(text: _input.accumulatedIncomeDecimo.toString());
 
-    // Deep link support: load worker by ID if only workerId is provided
-    if (widget.worker != null) {
-      _loadFromWorker(widget.worker!);
-    } else if (widget.workerId != null && widget.workerId!.isNotEmpty) {
-      _loadWorkerById(widget.workerId!);
+      debugPrint('🔧 LiquidacionScreen.initState() COMPLETED successfully');
+
+      // MOVE DATA LOADING TO POST FRAME to avoid setState() during initState crash
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Deep link support: load worker by ID if only workerId is provided
+        if (widget.worker != null) {
+          debugPrint('🔧 LiquidacionScreen: Loading from widget.worker (PostFrame)');
+          _loadFromWorker(widget.worker!);
+        } else if (widget.workerId != null && widget.workerId!.isNotEmpty) {
+          debugPrint('🔧 LiquidacionScreen: Loading by workerId=${widget.workerId} (PostFrame)');
+          _loadWorkerById(widget.workerId!);
+        } else {
+          debugPrint('🔧 LiquidacionScreen: Manual mode (no worker)');
+        }
+      });
+      debugPrint('🔧 LiquidacionScreen.initState() COMPLETED successfully');
+    } catch (e, stack) {
+      debugPrint('❌ LiquidacionScreen.initState() ERROR: $e');
+      debugPrint('Stack: $stack');
     }
   }
   
-  /// NEW: Load worker from storage by ID (for deep link support)
+  /// Load worker from storage by ID (for deep link support)
   Future<void> _loadWorkerById(String workerId) async {
-    setState(() => _isLoadingWorker = true);
+    setState(() {
+      _isLoadingWorker = true;
+      _workerNotFound = false;
+    });
     try {
       final worker = await WorkerService().getWorkerById(workerId);
-      if (worker != null && mounted) {
-        _loadFromWorker(worker);
+      if (mounted) {
+        if (worker != null) {
+          _loadFromWorker(worker);
+        } else {
+          setState(() => _workerNotFound = true);
+        }
       }
+    } catch (e) {
+      debugPrint('❌ Error loading worker for liquidacion: $e');
+      if (mounted) setState(() => _workerNotFound = true);
     } finally {
       if (mounted) setState(() => _isLoadingWorker = false);
     }
@@ -269,9 +296,16 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔧 LiquidacionScreen.build() called - isLoadingWorker: $_isLoadingWorker, workerNotFound: $_workerNotFound');
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1520),
-      body: SingleChildScrollView(
+          backgroundColor: const Color(0xFF0F1520),
+      body: _isLoadingWorker
+          ? _buildLoadingState()
+          : _workerNotFound
+              ? _buildWorkerNotFoundState()
+              : SingleChildScrollView(
+        key: const PageStorageKey('liquidacion_scroll'),
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 50),
@@ -339,7 +373,7 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                      ),
                      
                      const SizedBox(height: 12),
-
+                     
                      // HORAS LABORALES
                      HrGlassContainer(
                        child: Column(
@@ -360,19 +394,19 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                         child: Column(
                            crossAxisAlignment: CrossAxisAlignment.start,
                            children: [
-                              Text('💵 Salario Base', style: GoogleFonts.outfit(color: kNeonGold, fontSize: 18, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 16),
-                               NeonInput(label: 'Salario Base (\$)', controller: _salaryCtrl, isNumber: true, onChanged: (v) => _input.salary = double.tryParse(v) ?? 0, required: true),
-                              const SizedBox(height: 16),
-                              NeonDropdown<PaymentFrequency>(
-                                label: 'Frecuencia de Pago',
-                                value: _input.paymentFrequency,
-                                items: PaymentFrequency.values.map((e) => DropdownMenuItem(
-                                  value: e,
-                                  child: Text(e.toString().split('.').last.toUpperCase(), style: const TextStyle(color: Colors.white)),
-                                )).toList(),
-                                onChanged: (v) => setState(() => _input.paymentFrequency = v!),
-                              ),
+                               Text('💵 Salario Base', style: GoogleFonts.outfit(color: kNeonGold, fontSize: 18, fontWeight: FontWeight.bold)),
+                               const SizedBox(height: 16),
+                                NeonInput(label: 'Salario Base (\$)', controller: _salaryCtrl, isNumber: true, onChanged: (v) => _input.salary = double.tryParse(v) ?? 0, required: true),
+                               const SizedBox(height: 16),
+                               NeonDropdown<PaymentFrequency>(
+                                 label: 'Frecuencia de Pago',
+                                 value: _input.paymentFrequency,
+                                 items: PaymentFrequency.values.map((e) => DropdownMenuItem(
+                                   value: e,
+                                   child: Text(e.toString().split('.').last.toUpperCase(), style: const TextStyle(color: Colors.white)),
+                                 )).toList(),
+                                 onChanged: (v) => setState(() => _input.paymentFrequency = v!),
+                               ),
                            ],
                         )
                      ),
@@ -381,6 +415,7 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                      
                      // DATOS LABORALES (FECHAS)
                      HrGlassContainer(
+
                        child: Column(
                          crossAxisAlignment: CrossAxisAlignment.start,
                          children: [
@@ -460,7 +495,6 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                       ),
                       
                       const SizedBox(height: 12),
-                      
                       // DEDUCCIONES
                       HrGlassContainer( 
                         child: Column(
@@ -508,7 +542,7 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                           ],
                         )
                       ),
-
+                      
                       const SizedBox(height: 32),
                       
                       // CALCULAT BUTTON
@@ -540,6 +574,9 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                         _buildInlineResults(),
                         
                       const SizedBox(height: 50),
+
+
+                      
                    ],
                  ),
                ),
@@ -547,7 +584,27 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
           ),
         ),
       ),
+
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: kNeonPink,
+        child: const Icon(Icons.cleaning_services, color: Colors.white),
+        onPressed: () {
+          setState(() {
+            _input = LiquidacionInputModel(
+                startDate: DateTime.now().subtract(const Duration(days: 365)),
+                endDate: DateTime.now()
+            );
+            _result = null;
+            _formKey.currentState?.reset();
+            _nameCtrl.text = '';
+            _idCtrl.text = '';
+            _salaryCtrl.text = '';
+            _accumulatedDecimoCtrl.text = '0';
+          });
+        },
+      ),
     );
+
   }
   
   Widget _buildInlineResults() {
@@ -564,19 +621,42 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
              if (_result!.preaviso > 0) _buildResultRow('Preaviso', _result!.preaviso),
          ], Colors.orangeAccent),
          const SizedBox(height: 24),
-         NeonButton(
-           text: 'Ver Carta / Comprobante',
-           icon: Icons.description,
-           color: Colors.white10,
-           textColor: Colors.white,
-           onTap: () {
-               Navigator.push(context, MaterialPageRoute(builder: (_) => ComprobanteLiquidacionScreen(
-                 result: _result!,
-                 input: _input,
-               )));
-           },
-           primary: false,
-         )
+          Row(
+            children: [
+              Expanded(
+                child: NeonButton(
+                  text: 'Ver Comprobante',
+                  icon: Icons.receipt_long,
+                  color: Colors.white10,
+                  textColor: Colors.white,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ComprobanteLiquidacionScreen(
+                      result: _result!,
+                      input: _input,
+                    )));
+                  },
+                  primary: false,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: NeonButton(
+                  text: 'Ver Carta',
+                  icon: Icons.description,
+                  color: Colors.white10,
+                  textColor: Colors.white,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => CartaPreviewScreen(
+                      input: _input,
+                      result: _result!,
+                      isCarta: true,
+                    )));
+                  },
+                  primary: false,
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -637,24 +717,43 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
   }
 
   void _calculateLiquidacion() async {
+     // Dismiss keyboard to prevent focus/layout issues during rebuild
+     FocusScope.of(context).unfocus();
+     
      if (!_formKey.currentState!.validate()) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor complete los campos requeridos'), backgroundColor: Colors.redAccent));
         return;
      }
      
+     // Show loading first
      setState(() {
         _isLoading = true;
-        _result = LiquidacionLogic.calculate(_input);
-        _isLoading = false;
-        
-        // Auto-scroll logic
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
-        });
      });
      
-     // === AUTO-SAVE TO HR ARCHIVE ===
-     if (_result != null) {
+     // Simulate calculation delay to allow UI to update and prevent jank
+     await Future.delayed(const Duration(milliseconds: 500));
+     
+     // Calculate
+     final result = LiquidacionLogic.calculate(_input);
+
+     if (mounted) {
+       setState(() {
+          _result = result;
+          _isLoading = false;
+       });
+       
+       // Auto-scroll logic
+       WidgetsBinding.instance.addPostFrameCallback((_) {
+           if (_scrollController.hasClients) {
+             _scrollController.animateTo(
+               _scrollController.position.maxScrollExtent, 
+               duration: const Duration(milliseconds: 500), 
+               curve: Curves.easeOut
+             );
+           }
+       });
+       
+       // === AUTO-SAVE TO HR ARCHIVE ===
        final record = HRCentralRecord(
          workerId: widget.worker?.id ?? 'manual',
          workerName: _input.workerName,
@@ -665,18 +764,108 @@ class _LiquidacionScreenState extends State<LiquidacionScreen> {
                  : HRRecordType.liquidacion),
          eventDate: _input.endDate,
          description: '${_input.terminationType.name} - ${DateFormat('dd/MM/yyyy').format(_input.startDate)} al ${DateFormat('dd/MM/yyyy').format(_input.endDate)}',
-         amount: _result!.totalPagar,
+         amount: result.totalPagar,
          data: {
            'salarioMensual': _input.salary,
-           'diasTrabajados': _result!.daysWorked,
-           'vacaciones': _result!.vacacionesProporcionales,
-           'decimo': _result!.decimoProporcional,
-           'prima': _result!.primaAntiguedad,
-           'indemnizacion': _result!.indemnizacion,
+           'diasTrabajados': result.daysWorked,
+           'vacaciones': result.vacacionesProporcionales,
+           'decimo': result.decimoProporcional,
+           'prima': result.primaAntiguedad,
+           'indemnizacion': result.indemnizacion,
          },
        );
        await HRArchiveService().add(record);
        debugPrint('✅ Liquidación guardada en Archivo HR: ${_input.workerName}');
      }
+  }
+
+  // ========= LOADING & ERROR STATES =========
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(color: kNeonCyan),
+          const SizedBox(height: 24),
+          Text(
+            'Cargando datos del empleado...',
+            style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkerNotFoundState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: const Icon(Icons.person_search, size: 48, color: Colors.orange),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Empleado no encontrado',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'El ID "${widget.workerId}" no existe en el directorio.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(color: Colors.white54, fontSize: 14),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/hr/employees');
+                    }
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Volver'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white30),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() => _workerNotFound = false);
+                  },
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('Usar Modo Manual'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kNeonGold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

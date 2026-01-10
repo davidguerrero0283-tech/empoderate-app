@@ -38,6 +38,7 @@ class _WorkerFormScreenState extends State<WorkerFormScreen> {
   DateTime? _contractEnd;
   PaymentType _paymentType = PaymentType.base;
   bool _isLoading = false;
+  WorkerProfile? _loadedWorker; // Store the loaded worker to preserve ID and history
 
   @override
   void initState() {
@@ -56,6 +57,7 @@ class _WorkerFormScreenState extends State<WorkerFormScreen> {
     final worker = await WorkerService().getWorkerById(id);
     if (mounted) {
       if (worker != null) {
+        _loadedWorker = worker;
         _initControllers(worker);
       } else {
         _initControllers(null);
@@ -108,7 +110,7 @@ class _WorkerFormScreenState extends State<WorkerFormScreen> {
     setState(() => _isLoading = true);
     
     final newProfile = WorkerProfile(
-      id: widget.worker?.id ?? DateTime.now().millisecondsSinceEpoch.toString(), // Simple ID gen
+      id: widget.worker?.id ?? _loadedWorker?.id ?? DateTime.now().millisecondsSinceEpoch.toString(), // Preserves ID if editing
       name: _nameCtrl.text,
       cedula: _cedulaCtrl.text,
       position: _posCtrl.text,
@@ -121,9 +123,9 @@ class _WorkerFormScreenState extends State<WorkerFormScreen> {
       startDate: _startDate,
       contractEnd: _contractEnd,
       notes: _notesCtrl.text,
-      payrollHistory: widget.worker?.payrollHistory ?? [],
-      lastCalcTotal: widget.worker?.lastCalcTotal,
-      lastCalcDate: widget.worker?.lastCalcDate,
+      payrollHistory: widget.worker?.payrollHistory ?? _loadedWorker?.payrollHistory ?? [],
+      lastCalcTotal: widget.worker?.lastCalcTotal ?? _loadedWorker?.lastCalcTotal,
+      lastCalcDate: widget.worker?.lastCalcDate ?? _loadedWorker?.lastCalcDate,
     );
 
     try {

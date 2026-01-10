@@ -5,6 +5,7 @@ class RutaStep {
   final String content;
   final String? toolRoute;
   final String? toolLabel;
+  final String? area; // Added field
   bool isCompleted;
 
   RutaStep({
@@ -14,6 +15,7 @@ class RutaStep {
     required this.content,
     this.toolRoute,
     this.toolLabel,
+    this.area,
     this.isCompleted = false,
   });
 }

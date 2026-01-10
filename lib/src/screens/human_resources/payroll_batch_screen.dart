@@ -288,6 +288,7 @@ class _PayrollBatchScreenState extends State<PayrollBatchScreen> {
             
             Expanded(
               child: ListView.builder(
+                key: const PageStorageKey('payroll_batch_list'),
                 itemCount: widget.selectedWorkers.length,
                 itemBuilder: (ctx, i) {
                   final w = widget.selectedWorkers[i];

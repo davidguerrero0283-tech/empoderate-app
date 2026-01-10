@@ -14,7 +14,7 @@ import 'package:proyecto_empoderate/ui/components/cards/business_status_card.dar
 import '../widgets/pwa_install_button.dart';
 
 import '../logic/business_progress_controller.dart';
-import 'home/home_start_block.dart';
+import 'package:proyecto_empoderate/features/home_locked/home_locked.dart';
 import 'package:proyecto_empoderate/ui/theme/empoderate_theme.dart'; // Ensure theme colors are available
 import '../features/blog/blog_data_service.dart';
 
@@ -79,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 28),
 
                 // SECCIÓN 2: PRIMEROS PASOS
-                HomeStartBlock(
+                HomeLockedCard(
                   dashboard: _progressController.data,
                 ),
 

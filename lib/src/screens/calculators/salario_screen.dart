@@ -238,6 +238,7 @@ class _SalarioScreenState extends State<SalarioScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F1520),
       body: SingleChildScrollView(
+        key: const PageStorageKey('salario_scroll'),
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 50),

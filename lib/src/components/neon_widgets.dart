@@ -875,7 +875,10 @@ class NeonSwitch extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (label != null) Expanded(child: Text(label!, style: const TextStyle(color: Colors.white70, fontSize: 14))),
+        if (label != null) Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Text(label!, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+        ),
         Switch(
           value: value,
           onChanged: onChanged,

@@ -235,6 +235,9 @@ class AppRoutes {
   
   static const String agendaTramites = '/agenda_tramites';
   static const String pendientes = '/pendientes';
+  
+  static const String laborCompliance = '/rrhh/cumplimiento';
+  static const String hrTemplates = '/rrhh/plantillas';
 
   // --- ROUTE GUARD HELPER ---
   static Widget _guard(String sectionId, Widget page) {
@@ -388,9 +391,9 @@ class AppRoutes {
     AppRoutes.accountingClassroom: (_) => const AccountingClassroomScreen(),
     AppRoutes.accountingV2: (_) => const AccountingV2Screen(),
     AppRoutes.accountingManagerial: (_) => const AccountingManagerialScreen(),
-    '/rrhh/cumplimiento': (_) => const LaborComplianceScreen(),
+    laborCompliance: (_) => const LaborComplianceScreen(),
 
-    '/rrhh/plantillas': (context) {
+    hrTemplates: (context) {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       return HrTemplatesScreen(
         initialTemplateType: args?['templateType'],

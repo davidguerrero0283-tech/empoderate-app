@@ -9,7 +9,12 @@ import '../../features/payroll/domain/payroll_record.dart';
 
 /// Dedicated screen to view all saved payroll records across all employees
 class PayrollHistoryScreen extends StatefulWidget {
-  const PayrollHistoryScreen({Key? key}) : super(key: key);
+  final String? initialWorkerId; // NEW: Pre-filter by worker
+
+  const PayrollHistoryScreen({
+    Key? key, 
+    this.initialWorkerId,
+  }) : super(key: key);
 
   @override
   State<PayrollHistoryScreen> createState() => _PayrollHistoryScreenState();
@@ -20,12 +25,13 @@ class _PayrollHistoryScreenState extends State<PayrollHistoryScreen> {
   List<WorkerProfile> _workers = [];
   List<_HistoryItem> _allRecords = [];
   bool _isLoading = true;
-  String _filterEmployeeId = 'all';
+  late String _filterEmployeeId; // Changed to late
   int _filterYear = DateTime.now().year;
 
   @override
   void initState() {
     super.initState();
+    _filterEmployeeId = widget.initialWorkerId ?? 'all'; // Initialize from widget
     _loadData();
   }
 

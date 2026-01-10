@@ -215,14 +215,14 @@ class _PremiumDrawerState extends State<PremiumDrawer> {
                       context, 
                       icon: Icons.verified_user_outlined,
                       title: 'Cumplimiento Laboral', 
-                      route: '/coming-soon?title=Cumplimiento Laboral',
+                      route: AppRoutes.laborCompliance,
                       color: Colors.tealAccent
                     ),
                     _buildMenuItem(
                       context, 
                       icon: Icons.description_outlined,
                       title: 'Plantillas RRHH', 
-                      route: '/coming-soon?title=Plantillas RRHH',
+                      route: AppRoutes.hrTemplates,
                       color: kNeonPurple
                     ),
                     

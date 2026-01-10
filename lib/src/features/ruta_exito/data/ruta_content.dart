@@ -13,6 +13,7 @@ final List<RutaPhase> rutaPhases = [
         id: 1,
         title: 'Elegir tipo de negocio',
         description: 'Servicios, Comercio o Manufactura',
+        area: 'Legal',
         content: '''Elegir tu tipo de negocio es la decisión más importante. En Panamá, existen tres grandes categorías: Servicios (consultoría, reparaciones, educación), Comercio (venta de productos propios o de terceros), y Manufactura (producción de bienes).
 
 Para DECIDIR, pregúntate: ¿Qué problema resolverás? ¿A quién le venderás? ¿Tienes las habilidades necesarias? Un error común es intentar "vender de todo" sin un enfoque claro.
@@ -25,6 +26,7 @@ PRO TIP: Valida tu idea con 5 clientes potenciales ANTES de gastar dinero. Preg�
         id: 2,
         title: 'Crear RUC',
         description: 'Registro tributario en DGI',
+        area: 'Legal',
         content: '''El RUC (Registro Único de Contribuyente) es tu cédula tributaria. Sin él, no puedes facturar legalmente ni abrir cuentas bancarias comerciales.
 
 PARA OBTENERLO: Ve a la DGI (Dirección General de Ingresos) con tu cédula, llena el formulario, y define si serás Persona Natural (tú como individuo) o Persona Jurídica (sociedad anónima). La mayoría de emprendedores inician como Persona Natural.
@@ -39,6 +41,7 @@ PRO TIP: Si facturas más de B/.36,000 anuales, el ITBMS (impuesto) será obliga
         id: 3,
         title: 'Aviso de Operación',
         description: 'Permiso comercial oficial',
+        area: 'Legal',
         content: '''El Aviso de Operación es tu permiso legal para operar comercialmente en Panamá. Es OBLIGATORIO para cualquier negocio físico o digital que venda productos o servicios.
 
 DÓNDE TRAMITARLO: En PanamaEmprende (Ministerio de Comercio) o en línea en su portal. Necesitas: RUC, cédula, descripción de actividad comercial, y ubicación del negocio.
@@ -55,6 +58,7 @@ PRO TIP: Algunos rubros requieren permisos adicionales (alimentos = Minsa, bebid
         id: 4,
         title: 'Permisos municipales',
         description: 'Registro en tu alcaldía',
+        area: 'Legal',
         content: '''Cada municipio (alcaldía) en Panamá exige permisos locales para operar. Esto incluye: Aviso de Funcionamiento, Paz y Salvo Municipal, y pago del impuesto de Anuncio (si tienes rótulo).
 
 PROCESO: Ve a tu alcaldía local con el Aviso de Operación nacional, RUC, y comprobante de domicilio del negocio. Te asignarán un inspector para verificar que cumples con normas de seguridad y zonificación.
@@ -69,6 +73,7 @@ PRO TIP: Si trabajas desde casa, verifica que tu zona residencial permita activi
         id: 5,
         title: 'Paz y Salvo',
         description: 'Certificado de solvencia',
+        area: 'Legal',
         content: '''El "Paz y Salvo" es un certificado que prueba que NO tienes deudas con el Estado (municipio, DGI, CSS). Es requisito para: renovar licencias, participar en licitaciones, vender el negocio, o cerrar la empresa.
 
 DÓNDE OBTENERLO: En la alcaldía (municipal) y en la DGI (nacional). Debes estar al día con TODOS tus pagos de impuestos.
@@ -85,6 +90,7 @@ PRO TIP: Usa recordatorios automáticos (calendario) para pagar impuestos antes 
         id: 6,
         title: 'Registro DGI',
         description: 'Configura tus impuestos',
+        area: 'Legal',
         content: '''El Registro en la DGI va más allá del RUC. Debes entender tus obligaciones fiscales: ITBMS (Impuesto de Transferencia de Bienes Muebles y Servicios), ISR (Impuesto sobre la Renta), y Aviso de Operación fiscal.
 
 PROCESO: Después de obtener el RUC, declara tu actividad económica y decide tu régimen tributario. La DGI te asignará un código CIIU (clasificación industrial).
@@ -104,6 +110,7 @@ PRO TIP: Usa un software de facturación electrónica desde el día 1. La DGI es
         id: 7,
         title: 'Cuenta bancaria comercial',
         description: 'Separa finanzas del negocio',
+        area: 'Legal',
         content: '''Separar las finanzas personales de las del negocio es CRÍTICO. Una cuenta bancaria comercial te permite: rastrear ingresos/gastos, solicitar créditos empresariales, y demostrar solvencia ante proveedores.
 
 REQUISITOS: RUC, cédula, Aviso de Operación, paz y salvo municipal. Algunos bancos piden depósito inicial (B/.100-B/.500).
@@ -120,6 +127,7 @@ PRO TIP: Configura transferencias automáticas para pagar impuestos (DGI, CSS) c
         id: 8,
         title: 'Caja de Seguro Social',
         description: 'Registro patronal (si tienes empleados)',
+        area: 'RRHH',
         content: '''La CSS (Caja de Seguro Social) es OBLIGATORIA si tienes empleados. Como patrono, debes inscribirte y pagar cuotas mensuales (seguro social + riesgo profesional).
 
 PROCESO: Ve a la CSS con RUC, Aviso de Operación, y lista de empleados. Te asignarán un número patronal. Cuota: ~12.25% del salario bruto del empleado (tú pagas 12.25%, el empleado paga 9.75%).
@@ -135,7 +143,8 @@ PRO TIP: Usa una planilla digital para calcular cuotas automáticamente.''',
       RutaStep(
         id: 9,
         title: 'Herramientas financieras',
-        description: 'Control de ingresos y gastos',
+        description: 'Control de ingresos and gastos',
+        area: 'Contabilidad',
         content: '''El control financiero es la diferencia entre un negocio exitoso y uno quebrado. Necesitas saber: ¿Cuánto entra? ¿Cuánto sale? ¿Cuánto me queda?
 
 HERRAMIENTAS RECOMENDADAS:
@@ -155,6 +164,7 @@ PRO TIP: Dedica 15 minutos CADA DÍA (no una vez al mes) para actualizar tus nú
         id: 10,
         title: 'Checklist final',
         description: '¡Tu negocio es formal!',
+        area: 'Legal',
         content: '''¡Felicidades! Si completaste los pasos anteriores, ya tienes:
 ✅ RUC activo
 ✅ Aviso de Operación vigente
@@ -183,6 +193,7 @@ PRO TIP: Programa recordatorios en tu calendario para renovar permisos y pagar i
         id: 11,
         title: 'Identidad del negocio',
         description: 'Logo, colores y voz de marca',
+        area: 'Marketing',
         content: '''Tu identidad de marca es cómo te perciben los clientes. Incluye: nombre del negocio, logo, colores, fuentes, y voz (cómo te comunicas).
 
 ELEMENTOS CLAVE:
@@ -201,6 +212,7 @@ PRO TIP: Tu marca debe reflejar a tu cliente ideal, no tus gustos personales. Si
         id: 12,
         title: 'Redes sociales',
         description: 'Presencia digital activa',
+        area: 'Marketing',
         content: '''Si no estás en internet, no existes. Elige 1-2 redes sociales donde esté tu cliente ideal:
 - Instagram/TikTok: B2C (ventas a personas), productos visuales
 - LinkedIn: B2B (ventas a empresas), servicios profesionales
@@ -220,6 +232,7 @@ PRO TIP: Programa contenido con anticipación (Later, Buffer, Metricool). Ahorra
         id: 13,
         title: 'Público objetivo',
         description: 'Define tu Buyer Persona',
+        area: 'Marketing',
         content: '''No puedes venderle a "todo el mundo". Define tu cliente ideal:
 
 PERFIL DEMOGRÁFICO:
@@ -242,6 +255,7 @@ PRO TIP: Entrevista a 3-5 clientes actuales o potenciales. Pregúntales qué los
         id: 14,
         title: 'Estrategia de contenido',
         description: 'Qué publicar y cuándo',
+        area: 'Marketing',
         content: '''La constancia es más importante que la perfección. Crea un calendario de contenido semanal:
 
 REGLA 80/20:
@@ -264,6 +278,7 @@ PRO TIP: Reutiliza 1 idea en 5 formatos: 1 video → 5 posts → 10 stories → 
         id: 15,
         title: 'Primer cliente',
         description: 'Consigue tu primera venta real',
+        area: 'Operaciones',
         content: '''La primera venta valida que alguien REALMENTE quiere tu producto/servicio. No regales, VENDE (aunque sea barato al inicio).
 
 ESTRATEGIAS:
@@ -286,6 +301,7 @@ PRO TIP: Después de la venta, pide testimonio ESE MISMO DÍA (video o escrito).
         id: 16,
         title: 'Registrar ingresos',
         description: 'Anota cada centavo',
+        area: 'Contabilidad',
         content: '''Desde la primera venta, registra TODO. Usa una hoja de cálculo simple o app de contabilidad.
 
 DATOS MÍNIMOS POR VENTA:
@@ -312,6 +328,7 @@ PRO TIP: Dedica 10 minutos CADA NOCHE a actualizar tus registros. No lo dejes pa
         id: 17,
         title: 'Ajustar precios',
         description: 'Revisa tus márgenes',
+        area: 'Contabilidad',
         content: '''Precio = Costo + Margen de Ganancia + Impuestos. Si vendes muy barato, trabajas gratis.
 
 FÓRMULA BÁSICA:
@@ -338,6 +355,7 @@ PRO TIP: Aumenta precios 10-15% cada 6 meses. Los clientes que te valoran se que
         id: 18,
         title: 'Sistema de ventas',
         description: 'Estandariza tu proceso',
+        area: 'Operaciones',
         content: '''Un sistema de ventas es un proceso repetible para convertir prospectos en clientes.
 
 PASOS TÍPICOS:
@@ -358,6 +376,7 @@ PRO TIP: Crea un script/plantilla para cada paso. No robotices, ADAPTA, pero ten
         id: 19,
         title: 'Experiencia del cliente',
         description: 'Haz que vuelvan',
+        area: 'Operaciones',
         content: '''Un cliente feliz trae 3 más. Uno enojado espanta a 10. La experiencia post-venta es TAN importante como la venta.
 
 PILARES:
@@ -380,6 +399,7 @@ PRO TIP: Envía mensaje de cumpleaños con descuento. Tasa de conversión: 3x no
         id: 20,
         title: 'Primer mes completado',
         description: '¡Sobreviviste!',
+        area: 'Operaciones',
         content: '''¡Felicidades! Si llegaste aquí, ya:
 ✅ Tienes marca e identidad
 ✅ Presencia en redes
@@ -412,6 +432,7 @@ PRO TIP: NO saltes fases. Domina lo básico antes de crecer.''',
         id: 21,
         title: 'Segundo producto',
         description: 'Diversifica tu oferta',
+        area: 'Contabilidad',
         content: '''Vender MÁS a los MISMOS clientes es más fácil que conseguir nuevos. Crea productos/servicios complementarios.
 
 ESTRATEGIAS:
@@ -430,6 +451,7 @@ PRO TIP: Pregunta a tus mejores 10 clientes: "¿Qué otro problema puedo resolve
         id: 22,
         title: 'Optimizar operaciones',
         description: 'Haz más con menos',
+        area: 'Operaciones',
         content: '''Elimina desperdicios: tiempo, dinero, esfuerzo. La eficiencia aumenta ganancias SIN vender más.
 
 ÁREAS CLAVE:
@@ -453,6 +475,7 @@ PRO TIP: Mapea tu proceso actual en papel. Verás dónde pierdes tiempo/dinero.'
         id: 23,
         title: 'Flujo de caja',
         description: 'Gestiona tu efectivo',
+        area: 'Contabilidad',
         content: '''Puedes tener ventas altas y quebrar si no tienes CASH en el banco. El efectivo es oxígeno del negocio.
 
 REGLAS DE ORO:
@@ -477,6 +500,7 @@ PRO TIP: Revisa flujo de caja CADA SEMANA, no una vez al mes.''',
         id: 24,
         title: 'Delegar',
         description: 'Libera tu tiempo',
+        area: 'RRHH',
         content: '''No puedes crecer si haces TODO. Delegar es clave para escalar, pero duele soltar control.
 
 QUÉ DELEGAR PRIMERO:
@@ -497,6 +521,7 @@ PRO TIP: Calcula tu "valor por hora". Si ganas B/.50/hora vendiendo, NO pases 5 
         id: 25,
         title: 'Marketing avanzado',
         description: 'Publicidad pagada y funnels',
+        area: 'Marketing',
         content: '''Llegó el momento de INVERTIR en marketing, no solo publicar gratis.
 
 OPCIONES:
@@ -521,6 +546,7 @@ PRO TIP: Invierte B/.10/día por 7 días. Analiza. Ajusta. Escala lo que funcion
         id: 26,
         title: 'Retención',
         description: 'Fideliza clientes',
+        area: 'Marketing',
         content: '''Cuesta 5X más conseguir cliente nuevo que vender a uno existente. Enfócate en RETENER.
 
 TÁCTICAS:
@@ -542,6 +568,7 @@ PRO TIP: Contacta a clientes inactivos >3 meses: "Te extrañamos, aquí tienes 1
         id: 27,
         title: 'Multiplicar ventas',
         description: 'Aumenta ticket promedio',
+        area: 'Contabilidad',
         content: '''Más ventas = Más clientes O Mismo cliente gasta más. La segunda opción es más barata.
 
 ESTRATEGIAS:
@@ -562,6 +589,7 @@ PRO TIP: La oferta SIEMPRE se hace DESPUÉS de la compra principal, no antes.'''
         id: 28,
         title: 'Alianzas estratégicas',
         description: 'Crece con partners',
+        area: 'Marketing',
         content: '''Juntos llegamos más lejos. Busca negocios complementarios (NO competencia) para colaborar.
 
 TIPOS DE ALIANZAS:
@@ -585,6 +613,7 @@ PRO TIP: Haz lista de 10 negocios donde está tu cliente. Propón alianza.''',
         id: 29,
         title: 'Automatizar',
         description: 'Usa tecnología',
+        area: 'Operaciones',
         content: '''El negocio debe funcionar SIN que estés 24/7. La automatización te da libertad.
 
 QUÉ AUTOMATIZAR:
@@ -606,6 +635,7 @@ PRO TIP: Automatiza 1 tarea por mes. En 1 año, 12 procesos trabajan solos.''',
         id: 30,
         title: '¡Lo lograste!',
         description: 'Tu negocio es un activo',
+        area: 'Operaciones',
         content: '''¡FELICIDADES! Completaste la Ruta del Éxito. Si aplicaste todo, ahora tienes:
 
 ✅ Negocio 100% legal

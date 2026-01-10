@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../calculators/salario_models.dart';
 import 'neon_widgets.dart';
+import 'package:go_router/go_router.dart';
 
 /// Compact horizontal employee card with visible action buttons
 /// All actions are visible without needing long-press
@@ -33,6 +34,18 @@ class EmployeeCardCompact extends StatefulWidget {
 
 class _EmployeeCardCompactState extends State<EmployeeCardCompact> {
   bool _isHovered = false;
+  bool _navBusy = false; // Prevent double navigation
+
+  /// Safe navigation helper - prevents double taps
+  Future<void> _pushOnce(BuildContext context, String route) async {
+    if (_navBusy || !context.mounted) return;
+    _navBusy = true;
+    try {
+      await context.push(route);
+    } finally {
+      _navBusy = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,183 +78,216 @@ class _EmployeeCardCompactState extends State<EmployeeCardCompact> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Row: Avatar, Name, Position, Salary
-            Row(
-              children: [
-                // Avatar circle with initials
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withOpacity(0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.3)),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _getInitials(widget.worker.name),
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF00E5FF),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Name, Position, Frequency
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.worker.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                          if (widget.isSelected)
-                            const Icon(Icons.check_circle, color: Color(0xFFF4D35E), size: 18),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.worker.position,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(color: Colors.white54, fontSize: 14),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF00E5FF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              _getFrequencyLabel(widget.worker.paymentMode),
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFF00E5FF),
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Salary
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+            // Top Row: Avatar, Name, Position, Salary (Clickable for selection/main action)
+            InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
                   children: [
-                    Text(
-                      widget.worker.paymentType == PaymentType.hourly
-                          ? '\$${widget.worker.hourlyRate?.toStringAsFixed(2) ?? "0.00"}'
-                          : '\$${widget.worker.basePayment.toStringAsFixed(0)}',
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF00E676),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                    // Avatar circle with initials
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.3)),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _getInitials(widget.worker.name),
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF00E5FF),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
                     ),
-                    Text(
-                      widget.worker.paymentType == PaymentType.hourly ? 'Por Hora' : 'Base',
-                      style: GoogleFonts.outfit(color: Colors.white38, fontSize: 10),
+                    const SizedBox(width: 12),
+    
+                    // Name, Position, Frequency
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.worker.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                              if (widget.isSelected)
+                                const Icon(Icons.check_circle, color: Color(0xFFF4D35E), size: 18),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.worker.position,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(color: Colors.white54, fontSize: 14),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00E5FF).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  _getFrequencyLabel(widget.worker.paymentMode),
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF00E5FF),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+    
+                    const SizedBox(width: 12),
+    
+                    // Salary
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          widget.worker.paymentType == PaymentType.hourly
+                              ? '\$${widget.worker.hourlyRate?.toStringAsFixed(2) ?? "0.00"}'
+                              : '\$${widget.worker.basePayment.toStringAsFixed(0)}',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF00E676),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                        Text(
+                          widget.worker.paymentType == PaymentType.hourly ? 'Por Hora' : 'Base',
+                          style: GoogleFonts.outfit(color: Colors.white38, fontSize: 10),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
 
             // Action Buttons - ALWAYS VISIBLE
             if (widget.showActions) ...[
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  // Planilla Button
-                  Expanded(
-                    child: _buildActionButton(
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    // Planilla Button
+                    _buildActionButton(
                       label: 'Planilla',
                       icon: Icons.calculate,
                       color: const Color(0xFF00E5FF),
                       onTap: widget.onTap ?? () => _navigateToSalaryCalculator(context),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  
-                  // Liquidación Button
-                  if (widget.onLiquidation != null)
-                    Expanded(
-                      child: _buildActionButton(
-                        label: 'Liquidación',
-                        icon: Icons.work_outline,
-                        color: const Color(0xFFFFAB40),
-                        onTap: widget.onLiquidation!,
+                    const SizedBox(width: 8),
+                    
+                    // === LIQUIDACIÓN BUTTON (RECREATED - NO CALLBACK, DIRECT ROUTE) ===
+                    _buildActionButton(
+                      label: 'Liquidación',
+                      icon: Icons.work_outline,
+                      color: const Color(0xFFFFAB40),
+                      onTap: () => _pushOnce(context, '/liquidacion?workerId=${widget.worker.id}'),
+                    ),
+                    const SizedBox(width: 8),
+                    
+                    // === VACACIONES BUTTON (NEW - SAME SIZE AS PLANILLA/LIQUIDACIÓN) ===
+                    _buildActionButton(
+                      label: 'Vacaciones',
+                      icon: Icons.beach_access,
+                      color: const Color(0xFF4FC3F7), // Light blue
+                      onTap: () => _pushOnce(context, '/vacation_calculator?workerId=${widget.worker.id}'),
+                    ),
+                    const SizedBox(width: 8),
+                    
+                    // === DÉCIMO BUTTON (NEW - SAME SIZE AS PLANILLA/LIQUIDACIÓN) ===
+                    _buildActionButton(
+                      label: 'Décimo',
+                      icon: Icons.card_giftcard,
+                      color: const Color(0xFFBA68C8), // Purple
+                      onTap: () => _pushOnce(context, '/decimo_calculator?workerId=${widget.worker.id}'),
+                    ),
+                    const SizedBox(width: 8),
+                    
+                    // === HISTORIAL COMPLETO BUTTON (RECREATED) ===
+                    _buildIconButton(
+                      icon: Icons.history,
+                      color: Colors.white70,
+                      onTap: () => _pushOnce(context, '/employee_history/${widget.worker.id}'),
+                      tooltip: 'Historial Completo',
+                    ),
+                    const SizedBox(width: 8),
+  
+                    // === HISTORIAL DE PLANILLA BUTTON (RECREATED) ===
+                    _buildIconButton(
+                      icon: Icons.receipt_long,
+                      color: const Color(0xFF00E676),
+                      onTap: () => _pushOnce(context, '/employee_history/${widget.worker.id}?tab=payroll'),
+                      tooltip: 'Historial de Planilla',
+                    ),
+                    const SizedBox(width: 8),
+  
+                    // Turnos Button
+                    _buildIconButton(
+                      icon: Icons.event_note,
+                      color: kNeonCyan,
+                      onTap: () => context.push('/shift_logger?workerId=${widget.worker.id}'),
+                      tooltip: 'Turnos',
+                    ),
+                    const SizedBox(width: 8),
+  
+                    // Plantillas Button (NEW)
+                    _buildIconButton(
+                      icon: Icons.description,
+                      color: const Color(0xFFCE93D8),
+                      onTap: () => context.push('/rrhh/plantillas?workerId=${widget.worker.id}'),
+                      tooltip: 'Plantillas y Documentos',
+                    ),
+                    const SizedBox(width: 8),
+  
+                    // Edit Button
+                    if (widget.onEdit != null)
+                      _buildIconButton(
+                        icon: Icons.edit,
+                        color: const Color(0xFFF4D35E),
+                        onTap: widget.onEdit!,
+                        tooltip: 'Editar Datos',
                       ),
-                    ),
-                  if (widget.onLiquidation != null) const SizedBox(width: 8),
-                  
-                  // Historial Button
-                  _buildIconButton(
-                    icon: Icons.history,
-                    color: Colors.white70,
-                    onTap: () => Navigator.pushNamed(
-                      context,
-                      '/employee_history',
-                      arguments: widget.worker.id,
-                    ),
-                    tooltip: 'Historial',
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Turnos Button
-                  _buildIconButton(
-                    icon: Icons.event_note,
-                    color: kNeonCyan,
-                    onTap: () => Navigator.pushNamed(
-                      context,
-                      '/shift_logger',
-                      arguments: {'worker': widget.worker},
-                    ),
-                    tooltip: 'Turnos',
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Edit Button
-                  if (widget.onEdit != null)
-                    _buildIconButton(
-                      icon: Icons.edit,
-                      color: const Color(0xFFF4D35E),
-                      onTap: widget.onEdit!,
-                      tooltip: 'Editar',
-                    ),
-                  if (widget.onEdit != null) const SizedBox(width: 6),
-                  
-                  // Delete Button
-                  if (widget.onDelete != null)
-                    _buildIconButton(
-                      icon: Icons.delete_outline,
-                      color: Colors.redAccent,
-                      onTap: () => _confirmDelete(context),
-                      tooltip: 'Eliminar',
-                    ),
-                ],
+                    if (widget.onEdit != null) const SizedBox(width: 8),
+                    
+                    // Delete Button
+                    if (widget.onDelete != null)
+                      _buildIconButton(
+                        icon: Icons.delete_outline,
+                        color: Colors.redAccent,
+                        onTap: () => _confirmDelete(context),
+                        tooltip: 'Eliminar',
+                      ),
+                  ],
+                ),
               ),
             ],
           ],
@@ -327,7 +373,7 @@ class _EmployeeCardCompactState extends State<EmployeeCardCompact> {
   }
 
   void _navigateToSalaryCalculator(BuildContext context) {
-    Navigator.pushNamed(context, '/salario_neto', arguments: widget.worker.id);
+    context.push('/salario_neto?workerId=${widget.worker.id}');
   }
 
   void _confirmDelete(BuildContext context) {
