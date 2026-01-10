@@ -83,6 +83,7 @@ import 'package:proyecto_empoderate/features/ai_shared/domain/ai_shared_types.da
 import '../screens/mi_negocio_rubro_screen.dart';
 import '../features/mi_negocio_rubro/ui/rubro_detail_screen.dart'; 
 import '../features/mi_negocio_rubro/ui/tramite_detail_screen.dart';
+import '../features/mi_negocio_rubro/ui/guide_master_screen.dart';
 import '../screens/checklist/checklist_hub_screen.dart';
 import '../features/checklist/screens/checklist_rubro_selection_screen.dart';
 import '../features/checklist/screens/checklist_rubro_detail_screen.dart';
@@ -1029,6 +1030,11 @@ class AppRouter {
         path: '/module_guide',
         name: 'module_guide',
         builder: (context, state) => const ModuleGuideScreen(),
+      ),
+      GoRoute(
+        path: '/guide_master',
+        name: 'guide_master',
+        builder: (context, state) => const GuideMasterScreen(),
       ),
       GoRoute(
         path: '/pendientes',

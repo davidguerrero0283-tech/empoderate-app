@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../ui/theme/empoderate_theme.dart';
 import '../../components/premium_scaffold.dart';
@@ -111,13 +112,21 @@ class ModuleGuideScreen extends StatelessWidget {
             Center(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: args.themeColor.withOpacity(0.2),
-                  foregroundColor: args.themeColor,
-                  side: BorderSide(color: args.themeColor),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                   // Requirement E: "Ir a Elegir mi Rubro" - Prominent Action
+                  backgroundColor: EmpoderateTheme.goldStrong, 
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text('ENTENDIDO'),
+                onPressed: () {
+                   // Requirement E logic
+                   if (context.canPop()) {
+                     context.pop();
+                   } else {
+                     context.go('/mi_negocio_rubro');
+                   }
+                },
+                child: const Text('IR A ELEGIR MI RUBRO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
             const SizedBox(height: 60),
@@ -142,7 +151,7 @@ class ModuleGuideScreen extends StatelessWidget {
       id: 'fallback',
       title: 'Contenido No Disponible',
       subtitle: 'Esta guía está en construcción',
-      themeColor: Color(0xFF666666),
+      themeColor: const Color(0xFF666666),
       icon: Icons.construction,
       sections: [
         GuideSection(

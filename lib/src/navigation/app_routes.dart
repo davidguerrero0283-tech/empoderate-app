@@ -100,6 +100,7 @@ import '../screens/marketing/social_media_automation_screen.dart';
 import '../../features/agenda_tramites/ui/agenda_tramites_screen.dart';
 import '../features/pendientes/screens/pendientes_screen.dart';
 import '../screens/learning/module_guide_screen.dart';
+import '../features/mi_negocio_rubro/ui/guide_master_screen.dart';
 import 'package:proyecto_empoderate/features/ai_texts/ui/ai_texts_screen.dart';
 import 'package:proyecto_empoderate/features/ai_customers/ui/ai_customers_screen.dart';
 import 'package:proyecto_empoderate/features/ai_shared/ui/ai_generic_screen.dart';
@@ -418,6 +419,7 @@ class AppRoutes {
       );
     },
     '/module_guide': (_) => const ModuleGuideScreen(),
+    '/guide_master': (_) => const GuideMasterScreen(),
     '/period_comparison': (_) => const PeriodComparisonScreen(),
     '/tools/import_shifts': (_) => const ImportShiftsScreen(),
 

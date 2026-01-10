@@ -112,7 +112,7 @@ class _MiNegocioRubroScreenState extends State<MiNegocioRubroScreen> {
 
                   // --- NEW: EDUCATION GUIDE ---
                   GestureDetector(
-                    onTap: () => context.push('/module_guide', extra: ModuleGuides.start),
+                    onTap: () => context.push('/guide_master'),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -146,66 +146,29 @@ class _MiNegocioRubroScreenState extends State<MiNegocioRubroScreen> {
                   const SizedBox(height: 24),
                   
                   // NEW: 2 Pink Neon Accordions (Compact)
+                  // Layout for the 2 Pink Neon Accordions
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      // Use Stack/Wrap logic or just simpler logic: 
-                      // If width > 600, Row. Else Column. 
-                      // But mostly mobile, so let's stick to Column for safety or Wrap.
-                      // User requested: "Deben estar en fila (2 columnas) si cabe; si no cabe (móvil), se apilan"
-                      // Since mobile is primary, let's use check width or simply Wrap.
                       bool isWide = constraints.maxWidth > 500;
                       
-                      return Flex(
-                        direction: isWide ? Axis.horizontal : Axis.vertical,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // BUTTON 1: ¿Por qué formalizarse?
-                          Flexible(
-                            flex: isWide ? 1 : 0,
-                            child: PremiumPinkNeonAccordion(
-                              title: 'Tu Idea de Negocio: El Primer Paso',
-                              content: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Todo gran negocio nace de una idea clara. No necesitas ser experto, solo resolver un problema real.'),
-                                  const SizedBox(height: 8),
-                                  Text('Consejos para empezar con el pie derecho:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                                  const SizedBox(height: 8),
-                                  _buildBullet('Identifica qué sabes hacer mejor y qué te apasiona.'),
-                                  _buildBullet('Investiga si hay personas dispuestas a pagar por ello.'),
-                                  _buildBullet('Empieza en pequeño (MVP), valida y luego escala.'),
-                                  _buildBullet('Explora los rubros abajo para encontrar tu nicho.'),
-                                ],
-                              ),
-                            ),
-                          ),
-                          
-                          SizedBox(width: 12, height: 12),
-                          
-                          // BUTTON 2: ¿Cómo se usa esta sección?
-                          Flexible(
-                            flex: isWide ? 1 : 0,
-                            child: PremiumPinkNeonAccordion(
-                              title: '¿Cómo se usa esta sección?',
-                              content: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildNumbered('1', 'Elige tu rubro (industria) según tu idea.'),
-                                  _buildNumbered('2', 'Selecciona tu modelo de negocio.'),
-                                  _buildNumbered('3', 'Revisa los requisitos por secciones (legales, permisos, operación, impuestos, personal).'),
-                                  _buildNumbered('4', 'Toca un requisito para ver pasos y fuentes oficiales.'),
-                                  _buildNumbered('5', 'Marca tu avance para llevar control.'),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Guía informativa. Los requisitos pueden variar según actividad y distrito.',
-                                    style: TextStyle(fontSize: 12, color: Colors.white54, fontStyle: FontStyle.italic),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
+                      if (isWide) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildFirstAccordion()),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildSecondAccordion()),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          children: [
+                            _buildFirstAccordion(),
+                            const SizedBox(height: 12),
+                            _buildSecondAccordion(),
+                          ],
+                        );
+                      }
                     }
                   ),
                 ],
@@ -435,6 +398,45 @@ class _MiNegocioRubroScreenState extends State<MiNegocioRubroScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+  Widget _buildFirstAccordion() {
+    return PremiumPinkNeonAccordion(
+      title: 'Tu Idea de Negocio: El Primer Paso',
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Todo gran negocio nace de una idea clara. No necesitas ser experto, solo resolver un problema real.'),
+          const SizedBox(height: 8),
+          const Text('Consejos para empezar con el pie derecho:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 8),
+          _buildBullet('Identifica qué sabes hacer mejor y qué te apasiona.'),
+          _buildBullet('Investiga si hay personas dispuestas a pagar por ello.'),
+          _buildBullet('Empieza en pequeño (MVP), valida y luego escala.'),
+          _buildBullet('Explora los rubros abajo para encontrar tu nicho.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecondAccordion() {
+    return PremiumPinkNeonAccordion(
+      title: '¿Cómo se usa esta sección?',
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildNumbered('1', 'Elige tu rubro (industria) según tu idea.'),
+          _buildNumbered('2', 'Selecciona tu modelo de negocio.'),
+          _buildNumbered('3', 'Revisa los requisitos por secciones (legales, permisos, operación, impuestos, personal).'),
+          _buildNumbered('4', 'Toca un requisito para ver pasos y fuentes oficiales.'),
+          _buildNumbered('5', 'Marca tu avance para llevar control.'),
+          const SizedBox(height: 12),
+          const Text(
+            'Guía informativa. Los requisitos pueden variar según actividad y distrito.',
+            style: TextStyle(fontSize: 12, color: Colors.white54, fontStyle: FontStyle.italic),
+          ),
+        ],
       ),
     );
   }
