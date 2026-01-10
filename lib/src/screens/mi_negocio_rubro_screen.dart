@@ -112,7 +112,7 @@ class _MiNegocioRubroScreenState extends State<MiNegocioRubroScreen> {
 
                   // --- NEW: EDUCATION GUIDE ---
                   GestureDetector(
-                    onTap: () => context.push('/module_guide?type=start'),
+                    onTap: () => context.push('/module_guide', extra: ModuleGuides.start),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

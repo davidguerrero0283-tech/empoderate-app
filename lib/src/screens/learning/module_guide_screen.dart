@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../ui/theme/empoderate_theme.dart';
 import '../../components/premium_scaffold.dart';
 import 'module_guide_data.dart';
+import '../../features/mi_negocio_rubro/ui/tramite_detail_screen.dart'; // Reusing premium logic if needed
+import 'rubro_selector_questionnaire.dart';
 
 class ModuleGuideScreen extends StatelessWidget {
   const ModuleGuideScreen({Key? key}) : super(key: key);
@@ -52,6 +54,30 @@ class ModuleGuideScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
+            // NEW: Call to Action for Questionnaire (Only for Start Guide)
+            if (args.id == 'start') // Using args.id as guideId
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    // Launch Questionnaire
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (context) => const RubroSelectorQuestionnaire()),
+                    );
+                  },
+                  icon: const Icon(Icons.quiz, color: Colors.blueAccent),
+                  label: Text('Realizar Test de Compatibilidad', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ),
+            
             // Use .map().toList() to build children list
             ...args.sections.map((section) => Padding(
               padding: const EdgeInsets.only(bottom: 32),
