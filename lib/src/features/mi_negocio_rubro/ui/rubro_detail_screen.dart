@@ -25,6 +25,7 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
   // Progress State
   double _progress = 0.0;
   bool _isLoading = true;
+  final Set<String> _completedTramites = {}; // Tracks full completion IDs
 
   @override
   void initState() {
@@ -48,7 +49,7 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
      int totalItems = 0;
      int checkedItems = 0;
 
-     for (var t in tramites) {
+      for (var t in tramites) {
         final detail = RubroTramitesRepository.getTramiteDetail(t.id);
         if (detail != null) {
            final itemsCount = detail.requisitos.length + detail.pasos.length;
@@ -56,8 +57,13 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
 
            final checkedList = prefs.getStringList('tramite_progress_${t.id}') ?? [];
            checkedItems += checkedList.length;
+           
+           // Determine if THIS trámite is fully complete
+           if (itemsCount > 0 && checkedList.length >= itemsCount) {
+             _completedTramites.add(t.id);
+           }
         }
-     }
+      }
 
      if (mounted) {
        setState(() {
@@ -241,35 +247,80 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
   }
 
   Widget _buildTramiteCard(BuildContext context, TramiteRef item) {
+    // 1. Calculate completion for THIS specific item
+    //    (Ideally we would cache this map to avoid re-reading prefs constantly 
+    //     but for a list of 6 items it's fine)
+    final prefs =  SharedPreferences.getInstance().then((p) => p); // We need sync access or FutureBuilder
+    // Better strategy: We already load progress in _calculateGlobalProgress, 
+    // let's store a Map<String, bool> _completedMap in State.
+    
+    // BUT since we are in a simple widget, let's use a FutureBuilder for the individual card status
+    // OR better, populate a local Map in _calculateGlobalProgress
+    
+    final isCompleted = _completedTramites.contains(item.id); 
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white.withOpacity(0.05),
+      // Dynamic Color: Green if completed, Standard dark if not
+      color: isCompleted ? Colors.green.withOpacity(0.1) : Colors.white.withOpacity(0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.white12),
+        side: BorderSide(
+          color: isCompleted ? Colors.greenAccent : Colors.white12,
+          width: isCompleted ? 1.5 : 1.0
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: EmpoderateTheme.goldStrong.withOpacity(0.1),
+            // Green circle if completed
+            color: isCompleted ? Colors.green.withOpacity(0.2) : EmpoderateTheme.goldStrong.withOpacity(0.1),
             shape: BoxShape.circle,
+            boxShadow: isCompleted 
+                ? [ BoxShadow(color: Colors.greenAccent.withOpacity(0.3), blurRadius: 8) ] 
+                : null
           ),
-          child: const Icon(Icons.description_outlined, color: EmpoderateTheme.goldStrong),
+          child: Icon(
+            isCompleted ? Icons.check : Icons.description_outlined, 
+            color: isCompleted ? Colors.greenAccent : EmpoderateTheme.goldStrong
+          ),
         ),
         title: Text(
           item.nombre,
           style: GoogleFonts.outfit(
-            color: Colors.white,
+            color: isCompleted ? Colors.white : Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 16,
+            decoration: isCompleted ? TextDecoration.none : null
           ),
         ),
-        subtitle: item.entidad != null 
-            ? Text(item.entidad!, style: GoogleFonts.outfit(color: Colors.white54, fontSize: 13)) 
-            : null,
-        trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (item.entidad != null)
+              Text(item.entidad!, style: GoogleFonts.outfit(color: Colors.white54, fontSize: 13)),
+              
+            if (isCompleted)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'COMPLETADO', 
+                  style: GoogleFonts.outfit(
+                    color: Colors.greenAccent, 
+                    fontSize: 11, 
+                    fontWeight: FontWeight.bold, 
+                    letterSpacing: 1.0
+                  )
+                ),
+              )
+          ],
+        ),
+        trailing: Icon(
+           Icons.chevron_right, 
+           color: isCompleted ? Colors.greenAccent.withOpacity(0.5) : Colors.white30
+        ),
         onTap: () async {
           // Navigate and WAIT for return to update progress
           await context.push('/mi_negocio_rubro/tramite/${item.id}');
