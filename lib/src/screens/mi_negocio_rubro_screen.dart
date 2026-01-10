@@ -394,8 +394,8 @@ class _MiNegocioRubroScreenState extends State<MiNegocioRubroScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-             final category = categoryData.firstWhere((c) => c.rubros.any((r) => r.name.contains(title) || r.name == title));
-             final rubro = category.rubros.firstWhere((r) => r.name.contains(title) || r.name == title);
+             final category = categoryData.firstWhere((c) => c.rubros.any((r) => r.name.toLowerCase().contains(title.toLowerCase()) || r.name.toLowerCase() == title.toLowerCase()));
+             final rubro = category.rubros.firstWhere((r) => r.name.toLowerCase().contains(title.toLowerCase()) || r.name.toLowerCase() == title.toLowerCase());
 
              context.push('/mi_negocio_rubro/category/${category.id}/rubro/${rubro.id}');
           },
