@@ -35,10 +35,7 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
 
   // Reload progress when coming back from detail
   void _calculateGlobalProgress() async {
-     // This logic is a bit simplistic: it counts a trámite as "started/progressing" 
-     // based on checked items. For a more rigorous % we would sum total requirements vs checked requirements.
-     // Here we'll do: (Total Checked Items across all Rubro Trámites) / (Total Requirements + Pasos) = Real %
-
+     // Scoped Progress Calculation
      final tramites = RubroTramitesRepository.getTramitesForRubro(widget.categoryId, widget.rubroId);
      if (tramites.isEmpty) {
         if(mounted) setState(() { _progress = 0; _isLoading = false; });
@@ -48,14 +45,17 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
      final prefs = await SharedPreferences.getInstance();
      int totalItems = 0;
      int checkedItems = 0;
+     _completedTramites.clear(); // Reset before recalc
 
-      for (var t in tramites) {
+     for (var t in tramites) {
         final detail = RubroTramitesRepository.getTramiteDetail(t.id);
         if (detail != null) {
            final itemsCount = detail.requisitos.length + detail.pasos.length;
            totalItems += itemsCount;
 
-           final checkedList = prefs.getStringList('tramite_progress_${t.id}') ?? [];
+           // SCOPED KEY
+           final key = 'tramite_progress_${widget.categoryId}_${widget.rubroId}_${t.id}';
+           final checkedList = prefs.getStringList(key) ?? [];
            checkedItems += checkedList.length;
            
            // Determine if THIS trámite is fully complete
@@ -63,7 +63,7 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
              _completedTramites.add(t.id);
            }
         }
-      }
+     }
 
      if (mounted) {
        setState(() {
@@ -322,8 +322,8 @@ class _RubroDetailScreenState extends State<RubroDetailScreen> {
            color: isCompleted ? Colors.greenAccent.withOpacity(0.5) : Colors.white30
         ),
         onTap: () async {
-          // Navigate and WAIT for return to update progress
-          await context.push('/mi_negocio_rubro/tramite/${item.id}');
+          // Navigate with SCOPED path for independent checklist storage
+          await context.push('/mi_negocio_rubro/category/${widget.categoryId}/rubro/${widget.rubroId}/tramite/${item.id}');
           _calculateGlobalProgress(); // Refresh progress on return
         },
       ),

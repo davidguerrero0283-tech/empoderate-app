@@ -790,11 +790,17 @@ class AppRouter {
             },
           ),
           GoRoute(
-            path: 'tramite/:tramiteId',
+            path: 'category/:categoryId/rubro/:rubroId/tramite/:tramiteId',
             name: 'rubro_tramite_detail',
             builder: (context, state) {
+               final categoryId = state.pathParameters['categoryId'] ?? '';
+               final rubroId = state.pathParameters['rubroId'] ?? '';
                final tramiteId = state.pathParameters['tramiteId'] ?? '';
-               return TramiteDetailScreen(tramiteId: tramiteId);
+               return TramiteDetailScreen(
+                 categoryId: categoryId,
+                 rubroId: rubroId,
+                 tramiteId: tramiteId
+               );
             },
           ),
         ],

@@ -10,10 +10,14 @@ import '../../boveda/services/boveda_service.dart';
 import '../../boveda/models/doc_model.dart';
 
 class TramiteDetailScreen extends StatefulWidget {
+  final String categoryId;
+  final String rubroId;
   final String tramiteId;
 
   const TramiteDetailScreen({
     Key? key,
+    required this.categoryId,
+    required this.rubroId,
     required this.tramiteId,
   }) : super(key: key);
 
@@ -27,6 +31,8 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
   List<DocModel> _attachedDocs = []; 
   bool _isLoading = true;
 
+  String get _storageKey => 'tramite_progress_${widget.categoryId}_${widget.rubroId}_${widget.tramiteId}';
+
   @override
   void initState() {
     super.initState();
@@ -36,19 +42,14 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _checkedItems = (prefs.getStringList('tramite_progress_${widget.tramiteId}') ?? []).toSet();
+      _checkedItems = (prefs.getStringList(_storageKey) ?? []).toSet();
       _isLoading = false;
     });
     _refreshDocs();
   }
 
   Future<void> _refreshDocs() async {
-      // Very basic filtering based on naming convention "[TRAMITE_ID]"
-      // In a real app we might use a dedicated field in Boveda
       final boveda = BovedaService();
-      // Ensure boveda init if not already (it's safe to call mult times?)
-      // Actually BovedaService.init() usually called at app start
-      
       final allDocs = boveda.documents;
       final matchPrefix = '[${widget.tramiteId.toUpperCase()}]';
       
@@ -66,7 +67,7 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
       }
     });
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('tramite_progress_${widget.tramiteId}', _checkedItems.toList());
+    await prefs.setStringList(_storageKey, _checkedItems.toList());
   }
 
   Future<void> _attachDocument() async {
@@ -274,9 +275,14 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
             if (detail.pasos.isEmpty && detail.requisitos.isEmpty)
               _buildEmptyState(),
             
+
             // TIPS SECTION (Redesigned)
             if (detail.tips.isNotEmpty)
               _buildTipsSection(detail.tips),
+
+            // SOURCE SECTION (PROMPT 99)
+            if (detail.fuente != null)
+              _buildSourceSection(detail),
 
             // SECTIONS
             if (detail.requisitos.isNotEmpty)
@@ -455,7 +461,6 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
                    child: Row(
                      crossAxisAlignment: CrossAxisAlignment.start,
                      children: [
-                       // CHECKBOX
                        AnimatedContainer(
                          duration: const Duration(milliseconds: 200),
                          width: 24, height: 24,
@@ -467,7 +472,6 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
                          ),
                          child: isChecked ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
                        ),
-                       
                        Expanded(child: Text(text, style: GoogleFonts.outfit(color: isChecked ? Colors.white38 : Colors.white, fontSize: 14, height: 1.4, decoration: isChecked ? TextDecoration.lineThrough : null))),
                      ],
                    ),
@@ -517,6 +521,38 @@ class _TramiteDetailScreenState extends State<TramiteDetailScreen> {
     );
   }
 
-  // Remove old _buildMetaInfo in favor of _buildGlassMetric
-
+  Widget _buildSourceSection(TramiteDetail detail) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+           Icon(Icons.verified_user_outlined, color: Colors.white30, size: 20),
+           const SizedBox(width: 12),
+           Expanded(
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Text('FUENTE OFICIAL', style: GoogleFonts.outfit(color: Colors.white30, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                 const SizedBox(height: 4),
+                 Text(detail.fuente ?? 'No especificada', style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                 if (detail.referencia != null)
+                   Text(detail.referencia!, style: GoogleFonts.outfit(color: Colors.white38, fontSize: 12)),
+                 if (detail.fechaVerificacion != null)
+                   Padding(
+                     padding: const EdgeInsets.only(top: 4),
+                     child: Text('Verificado: ${detail.fechaVerificacion}', style: GoogleFonts.outfit(color: Colors.greenAccent.withOpacity(0.5), fontSize: 11)),
+                   ),
+               ],
+             ),
+           )
+        ],
+      ),
+    );
+  }
 }
