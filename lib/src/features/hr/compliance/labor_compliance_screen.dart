@@ -88,7 +88,7 @@ class LaborComplianceScreen extends StatelessWidget {
               subtitle: 'Gestión de seguro social',
               icon: Icons.health_and_safety,
               color: const Color(0xFF00E5FF),
-              route: null, // No existe aún
+              route: '/hr/obligaciones/css',
             ),
             const SizedBox(height: 12),
 
@@ -118,7 +118,7 @@ class LaborComplianceScreen extends StatelessWidget {
               subtitle: 'Control de ausencias justificadas',
               icon: Icons.event_note,
               color: const Color(0xFF9575CD),
-              route: null, // No existe aún
+              route: '/hr/obligaciones/permisos',
             ),
             const SizedBox(height: 12),
 
@@ -138,7 +138,7 @@ class LaborComplianceScreen extends StatelessWidget {
               subtitle: 'Fechas límite y recordatorios',
               icon: Icons.calendar_today,
               color: const Color(0xFFFFB74D),
-              route: null, // No existe aún
+              route: '/hr/obligaciones/calendario',
             ),
 
             const SizedBox(height: 80),

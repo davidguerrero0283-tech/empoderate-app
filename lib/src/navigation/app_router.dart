@@ -60,6 +60,9 @@ import '../features/hr/compliance/labor_compliance_screen.dart';
 import '../features/schedule_management/presentation/schedule_screen.dart';
 import '../screens/human_resources/worker_form_screen.dart';
 import '../features/hr/guide/hr_master_guide_screen.dart'; // NEW GUIDE
+import '../features/hr/compliance/toolkit/css_cuota_toolkit_screen.dart';
+import '../features/hr/compliance/toolkit/permisos_licencias_toolkit_screen.dart';
+import '../features/hr/compliance/toolkit/calendario_obligaciones_screen.dart';
 
 // Marketing
 import '../screens/marketing/marketing_content_screen.dart';
@@ -1047,6 +1050,22 @@ class AppRouter {
         path: '/hr/master_guide',
         name: 'hr_master_guide',
         builder: (context, state) => const HrMasterGuideScreen(),
+      ),
+      // NEW COMPLIANCE TOOLKITS
+      GoRoute(
+        path: '/hr/obligaciones/css',
+        name: 'hr_obligaciones_css',
+        builder: (context, state) => const CssCuotaToolkitScreen(),
+      ),
+      GoRoute(
+        path: '/hr/obligaciones/permisos',
+        name: 'hr_obligaciones_permisos',
+        builder: (context, state) => const PermisosLicenciasToolkitScreen(),
+      ),
+      GoRoute(
+        path: '/hr/obligaciones/calendario',
+        name: 'hr_obligaciones_calendario',
+        builder: (context, state) => const CalendarioObligacionesScreen(),
       ),
       GoRoute(
         path: '/pendientes',
