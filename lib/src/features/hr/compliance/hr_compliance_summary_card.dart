@@ -47,6 +47,11 @@ class _HrComplianceSummaryCardState extends State<HrComplianceSummaryCard> {
 
     return NeonWideCard(
       borderColor: const Color(0xFFFF4081), // Neon Pink
+      onTap: () async {
+        // Navigate and reload stats when returning
+        await context.push('/rrhh/cumplimiento');
+        _loadStats();
+      },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -110,24 +115,15 @@ class _HrComplianceSummaryCardState extends State<HrComplianceSummaryCard> {
 
             const SizedBox(height: 16),
 
-            // Actions
+            // Arrow indicator instead of button
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  flex: 2,
-                  child: NeonButton(
-                    text: 'GESTIONAR',
-                    onTap: () async {
-                      // Navigate and reload stats when returning
-                      await context.push('/rrhh/cumplimiento');
-                      _loadStats();
-                    },
-                    color: const Color(0xFFFF4081),
-                    primary: true,
-                  ),
-                ),
+                Text('GESTIONAR', style: GoogleFonts.outfit(color: const Color(0xFFFF4081), fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_ios, color: Color(0xFFFF4081), size: 14),
               ],
-            )
+            ),
           ],
         ),
       ),

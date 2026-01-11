@@ -108,6 +108,17 @@ class _LaborComplianceScreenState extends State<LaborComplianceScreen> {
             // Cards de herramientas
             _buildToolCard(
               context,
+              title: 'Pago de Planilla',
+              subtitle: 'Cálculo y generación de salarios',
+              icon: Icons.payments,
+              color: const Color(0xFF4CAF50),
+              route: '/salario',
+              moduleId: null,
+            ),
+            const SizedBox(height: 12),
+
+            _buildToolCard(
+              context,
               title: 'CSS / Cuota Obrero Patronal',
               subtitle: 'Gestión de seguro social',
               icon: Icons.health_and_safety,

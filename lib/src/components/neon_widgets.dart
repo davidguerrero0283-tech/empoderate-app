@@ -645,14 +645,7 @@ class _NeonWideCardState extends State<NeonWideCard> {
                   width: _isHovered ? 2 : 1.0,
                 ),
                 boxShadow: [
-                  if (_isHovered)
-                    BoxShadow(
-                      color: kNeonGold.withOpacity(0.4),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    )
-                  else
-                    BoxShadow(color: widget.borderColor.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+                  BoxShadow(color: widget.borderColor.withOpacity(_isHovered ? 0.2 : 0.1), blurRadius: 10, offset: const Offset(0, 4)),
                 ],
               ),
               child: widget.child,
