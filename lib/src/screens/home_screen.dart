@@ -17,6 +17,7 @@ import '../logic/business_progress_controller.dart';
 import 'package:proyecto_empoderate/features/home_locked/home_locked.dart';
 import 'package:proyecto_empoderate/ui/theme/empoderate_theme.dart'; // Ensure theme colors are available
 import '../features/blog/blog_data_service.dart';
+import '../features/hr/compliance/widgets/home_compliance_progress_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -82,6 +83,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 HomeLockedCard(
                   dashboard: _progressController.data,
                 ),
+
+                const SizedBox(height: 16),
+
+                // SECCIÓN 2.1: CUMPLIMIENTO LABORAL (Progress Card)
+                const HomeComplianceProgressCard(),
 
                 const SizedBox(height: 28),
                 
