@@ -1,0 +1,95 @@
+{
+    "bundleVersion": "2026.01.10",
+    "generatedAt": "2026-01-10T00:00:00Z",
+    "modules": [
+        {
+            "moduleId": "css",
+            "version": "2026.01.10",
+            "lastReviewed": "2026-01-10",
+            "summary": "Cuotas obrero-patronales actualizadas según Ley 462 y CSS.",
+            "keyPoints": [
+                "Aporte empleado: 9.75%",
+                "Aporte empleador: 13.25% (2025), 14.25% (2027+)",
+                "Presentación SIPE: hasta día 20",
+                "Pago: hasta último día del mes"
+            ],
+            "sources": [
+                {
+                    "title": "SIPE - CSS",
+                    "url": "https://sipe.css.gob.pa/"
+                },
+                {
+                    "title": "Gaceta Oficial",
+                    "url": "https://www.gacetaoficial.gob.pa/"
+                }
+            ],
+            "toolConfig": {
+                "employeeRate": 0.0975,
+                "employerRates": [
+                    {
+                        "from": "2025-03-01",
+                        "rate": 0.1325
+                    },
+                    {
+                        "from": "2027-03-01",
+                        "rate": 0.1425
+                    }
+                ],
+                "sipeDeadlineDay": 20
+            }
+        },
+        {
+            "moduleId": "permisos",
+            "version": "2026.01.10",
+            "lastReviewed": "2026-01-10",
+            "summary": "Licencias laborales según Código de Trabajo y MITRADEL.",
+            "keyPoints": [
+                "Paternidad: 3 días hábiles (Ley 27)",
+                "Maternidad: 14 semanas (CSS requiere 9 cuotas)",
+                "Lactancia: según Ley 135/2020"
+            ],
+            "sources": [
+                {
+                    "title": "MITRADEL",
+                    "url": "https://www.mitradel.gob.pa/"
+                },
+                {
+                    "title": "CSS Trámites",
+                    "url": "https://w3.css.gob.pa/"
+                }
+            ],
+            "toolConfig": {
+                "paternityDays": 3,
+                "maternityWeeks": 14
+            }
+        },
+        {
+            "moduleId": "calendario",
+            "version": "2026.01.10",
+            "lastReviewed": "2026-01-10",
+            "summary": "Fechas críticas para cumplimiento laboral en Panamá.",
+            "keyPoints": [
+                "SIPE: día 20 presentación, fin de mes pago",
+                "Décimo: 15/abril, 15/agosto, 15/diciembre"
+            ],
+            "sources": [
+                {
+                    "title": "Gaceta Oficial",
+                    "url": "https://www.gacetaoficial.gob.pa/"
+                },
+                {
+                    "title": "SIPE CSS",
+                    "url": "https://sipe.css.gob.pa/"
+                }
+            ],
+            "toolConfig": {
+                "sipeDeadlineDay": 20,
+                "decimoDates": [
+                    "04-15",
+                    "08-15",
+                    "12-15"
+                ]
+            }
+        }
+    ]
+}

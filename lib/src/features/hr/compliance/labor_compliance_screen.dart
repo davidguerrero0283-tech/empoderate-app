@@ -3,10 +3,34 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../components/premium_scaffold.dart';
 import '../../../components/neon_widgets.dart';
+import '../../rrhh/obligaciones/services/obligaciones_updates_service.dart';
 
-/// Pantalla de Obligaciones Laborales - Versión simple sin rebuild loops
-class LaborComplianceScreen extends StatelessWidget {
+/// Pantalla de Obligaciones Laborales con badges de actualización
+class LaborComplianceScreen extends StatefulWidget {
   const LaborComplianceScreen({Key? key}) : super(key: key);
+
+  @override
+  State<LaborComplianceScreen> createState() => _LaborComplianceScreenState();
+}
+
+class _LaborComplianceScreenState extends State<LaborComplianceScreen> {
+  final ObligacionesUpdatesService _service = ObligacionesUpdatesService();
+  Map<String, bool> _hasUpdates = {'css': false, 'permisos': false, 'calendario': false};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUpdates();
+  }
+
+  Future<void> _checkUpdates() async {
+    final updates = await _service.checkForModuleUpdates();
+    setState(() {
+      _hasUpdates = updates;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +113,7 @@ class LaborComplianceScreen extends StatelessWidget {
               icon: Icons.health_and_safety,
               color: const Color(0xFF00E5FF),
               route: '/hr/obligaciones/css',
+              moduleId: 'css',
             ),
             const SizedBox(height: 12),
 
@@ -99,6 +124,7 @@ class LaborComplianceScreen extends StatelessWidget {
               icon: Icons.card_giftcard,
               color: Colors.amber,
               route: '/decimo_calculator',
+              moduleId: null,
             ),
             const SizedBox(height: 12),
 
@@ -109,6 +135,7 @@ class LaborComplianceScreen extends StatelessWidget {
               icon: Icons.beach_access,
               color: Colors.pinkAccent,
               route: '/vacation_calculator',
+              moduleId: null,
             ),
             const SizedBox(height: 12),
 
@@ -119,6 +146,7 @@ class LaborComplianceScreen extends StatelessWidget {
               icon: Icons.event_note,
               color: const Color(0xFF9575CD),
               route: '/hr/obligaciones/permisos',
+              moduleId: 'permisos',
             ),
             const SizedBox(height: 12),
 
@@ -129,6 +157,7 @@ class LaborComplianceScreen extends StatelessWidget {
               icon: Icons.description,
               color: const Color(0xFFE040FB),
               route: '/rrhh/plantillas',
+              moduleId: null,
             ),
             const SizedBox(height: 12),
 
@@ -139,6 +168,7 @@ class LaborComplianceScreen extends StatelessWidget {
               icon: Icons.calendar_today,
               color: const Color(0xFFFFB74D),
               route: '/hr/obligaciones/calendario',
+              moduleId: 'calendario',
             ),
 
             const SizedBox(height: 80),
@@ -155,7 +185,10 @@ class LaborComplianceScreen extends StatelessWidget {
     required IconData icon,
     required Color color,
     required String? route,
+    required String? moduleId,
   }) {
+    final hasNewUpdate = moduleId != null && (_hasUpdates[moduleId] ?? false);
+    
     return GestureDetector(
       onTap: () {
         if (route != null) {
@@ -180,13 +213,34 @@ class LaborComplianceScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 28),
+            Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 28),
+                ),
+                // NEW Badge
+                if (hasNewUpdate)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'NUEVO',
+                        style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16),
             Expanded(

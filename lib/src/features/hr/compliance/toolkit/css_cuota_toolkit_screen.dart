@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../components/premium_scaffold.dart';
 import '../../../../ui/theme/empoderate_theme.dart';
 import 'package:intl/intl.dart';
+import '../../../rrhh/obligaciones/services/obligaciones_updates_service.dart';
+import '../../../rrhh/obligaciones/data/obligaciones_update_models.dart';
 
 class CssCuotaToolkitScreen extends StatefulWidget {
   const CssCuotaToolkitScreen({super.key});
@@ -14,11 +16,55 @@ class CssCuotaToolkitScreen extends StatefulWidget {
 
 class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
   final TextEditingController _salaryController = TextEditingController();
-  double _employerRate = 0.1325; // 13.25% default
-  String _vigencia = 'Vigente';
+  final ObligacionesUpdatesService _service = ObligacionesUpdatesService();
+  
+  ObligacionesModuleUpdate? _moduleData;
+  bool _isLoading = true;
+  bool _isOffline = false;
+  bool _isRefreshing = false;
+  
+  double _employerRate = 0.1325;
   double? _resultEmpleado;
   double? _resultEmpleador;
   double? _resultTotal;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadModule();
+  }
+
+  Future<void> _loadModule() async {
+    final data = await _service.getModule('css');
+    final offline = await _service.isUsingOfflineContent();
+    
+    // Mark as seen
+    await _service.markModuleSeen('css', data.version);
+    
+    setState(() {
+      _moduleData = data;
+      _isLoading = false;
+      _isOffline = offline;
+      
+      // Load rates from toolConfig
+      final rates = data.toolConfig['employerRates'] as List<dynamic>?;
+      if (rates != null && rates.isNotEmpty) {
+        _employerRate = (rates.first['rate'] as num?)?.toDouble() ?? 0.1325;
+      }
+    });
+  }
+
+  Future<void> _onRefresh() async {
+    setState(() => _isRefreshing = true);
+    await _service.forceRefresh();
+    await _loadModule();
+    setState(() => _isRefreshing = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Contenido actualizado')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -30,8 +76,9 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
     final salary = double.tryParse(_salaryController.text);
     if (salary == null) return;
 
+    final employeeRate = (_moduleData?.toolConfig['employeeRate'] as num?)?.toDouble() ?? 0.0975;
     setState(() {
-      _resultEmpleado = salary * 0.0975; // 9.75% Fixed for employee
+      _resultEmpleado = salary * employeeRate;
       _resultEmpleador = salary * _employerRate;
       _resultTotal = _resultEmpleado! + _resultEmpleador!;
     });
@@ -49,21 +96,116 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
       title: 'CSS / Cuotas',
       isNeonTitle: true,
       showBackButton: true,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderSection(),
-            const SizedBox(height: 24),
-            _buildCalculatorSection(),
-            const SizedBox(height: 24),
-            _buildOfficialInfoSection(),
-            const SizedBox(height: 24),
-            _buildSourcesSection(),
-            const SizedBox(height: 40),
-          ],
-        ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // VERSION HEADER
+                  _buildVersionHeader(),
+                  const SizedBox(height: 16),
+                  
+                  // OFFLINE BANNER
+                  if (_isOffline) _buildOfflineBanner(),
+                  
+                  _buildHeaderSection(),
+                  const SizedBox(height: 24),
+                  
+                  // SUMMARY FROM SERVICE
+                  _buildSummarySection(),
+                  const SizedBox(height: 24),
+                  
+                  _buildCalculatorSection(),
+                  const SizedBox(height: 24),
+                  _buildSourcesSection(),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildVersionHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.verified, color: EmpoderateTheme.gold, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Versión: ${_moduleData?.version ?? 'N/A'} • Revisado: ${_moduleData?.lastReviewed ?? 'N/A'}',
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+          ),
+          _isRefreshing
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : IconButton(
+                  icon: const Icon(Icons.refresh, size: 18),
+                  color: EmpoderateTheme.gold,
+                  onPressed: _onRefresh,
+                  tooltip: 'Actualizar ahora',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: const [
+          Icon(Icons.cloud_off, color: Colors.orange, size: 18),
+          SizedBox(width: 8),
+          Expanded(child: Text('Modo offline: usando contenido base', style: TextStyle(color: Colors.orange, fontSize: 12))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummarySection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(left: BorderSide(color: EmpoderateTheme.gold, width: 4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Resumen', style: GoogleFonts.outfit(color: EmpoderateTheme.gold, fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          Text(_moduleData?.summary ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 12),
+          ...(_moduleData?.keyPoints ?? []).map((point) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
+                const SizedBox(width: 8),
+                Expanded(child: Text(point, style: const TextStyle(color: Colors.white60, fontSize: 12))),
+              ],
+            ),
+          )),
+        ],
       ),
     );
   }
@@ -84,22 +226,9 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Cuota Obrero Patronal',
-                  style: GoogleFonts.outfit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                Text('Cuota Obrero Patronal', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 4),
-                Text(
-                  'Gestión de aportes a la Caja de Seguro Social (CSS) y cumplimiento de la Ley 51.',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
+                Text('Gestión de aportes a la Caja de Seguro Social (CSS) y cumplimiento de la Ley 51.', style: GoogleFonts.outfit(fontSize: 12, color: Colors.white70)),
               ],
             ),
           ),
@@ -123,19 +252,10 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
             children: [
               const Icon(Icons.calculate, color: EmpoderateTheme.gold),
               const SizedBox(width: 8),
-              Text(
-                'Calculadora Rápida de Aportes',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text('Calculadora Rápida de Aportes', style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 16),
-          
-          // Salary Input
           TextField(
             controller: _salaryController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -151,8 +271,6 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
             onChanged: (_) => _calculate(),
           ),
           const SizedBox(height: 16),
-
-          // Rate Selector
           Text('Vigencia Aporte Patronal:', style: GoogleFonts.outfit(color: Colors.white70, fontSize: 12)),
           const SizedBox(height: 8),
           Row(
@@ -163,8 +281,6 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
             ],
           ),
           const SizedBox(height: 20),
-
-          // Results
           if (_resultEmpleado != null)
             Column(
               children: [
@@ -198,14 +314,7 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
             borderRadius: BorderRadius.circular(8),
           ),
           alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? EmpoderateTheme.gold : Colors.white60,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
+          child: Text(label, style: TextStyle(color: isSelected ? EmpoderateTheme.gold : Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),
         ),
       ),
     );
@@ -216,83 +325,20 @@ class _CssCuotaToolkitScreenState extends State<CssCuotaToolkitScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: isTotal ? Colors.white : Colors.white70, 
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal
-          ),
-        ),
-        Text(
-          currencyFormat.format(value),
-          style: GoogleFonts.outfit(
-            color: isTotal ? EmpoderateTheme.gold : Colors.white,
-            fontSize: isTotal ? 18 : 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(label, style: TextStyle(color: isTotal ? Colors.white : Colors.white70, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
+        Text(currencyFormat.format(value), style: GoogleFonts.outfit(color: isTotal ? EmpoderateTheme.gold : Colors.white, fontSize: isTotal ? 18 : 14, fontWeight: FontWeight.bold)),
       ],
-    );
-  }
-
-  Widget _buildOfficialInfoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Información Oficial', style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        _buildInfoCard(
-          icon: Icons.info_outline,
-          title: 'Ajuste Escalonado (Ley 462)',
-          content: 'El aumento de la cuota patronal es progresivo. El primer ajuste del 1% se aplica desde la cuota de abril 2025 (pagadera en mayo).',
-        ),
-        const SizedBox(height: 8),
-        _buildInfoCard(
-          icon: Icons.calendar_today,
-          title: 'Plazos SIPE',
-          content: 'Presentación de planilla: Hasta el día 20 del mes.\nPago: Desde la presentación hasta el último día del mes.',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoCard({required IconData icon, required String title, required String content}) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(left: BorderSide(color: Color(0xFF1E88E5), width: 4)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Colors.white54, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(content, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildSourcesSection() {
+    final sources = _moduleData?.sources ?? [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Fuentes Oficiales & Accesos', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+        const Text('Fuentes Oficiales', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        _buildLinkButton('Acceso SIPE (CSS)', 'https://sipe.css.gob.pa/'),
-        _buildLinkButton('Gaceta Oficial (Ley 462)', 'https://www.gacetaoficial.gob.pa/'),
-        _buildLinkButton('Mitradel - Cálculos', 'https://www.mitradel.gob.pa/'),
+        ...sources.map((s) => _buildLinkButton(s.title, s.url)),
       ],
     );
   }
