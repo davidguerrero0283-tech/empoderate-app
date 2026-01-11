@@ -143,7 +143,7 @@ class _HumanResourcesScreenState extends State<HumanResourcesScreen> {
 
             // Guía Educativa
             GestureDetector(
-              onTap: () => context.push('/module_guide?type=hr'),
+              onTap: () => context.push('/hr/master_guide'), // NEW: Point to Premium Guide
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(

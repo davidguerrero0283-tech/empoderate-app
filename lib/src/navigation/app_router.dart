@@ -59,6 +59,7 @@ import '../screens/employees_grid_screen.dart';
 import '../features/hr/compliance/labor_compliance_screen.dart';
 import '../features/schedule_management/presentation/schedule_screen.dart';
 import '../screens/human_resources/worker_form_screen.dart';
+import '../features/hr/guide/hr_master_guide_screen.dart'; // NEW GUIDE
 
 // Marketing
 import '../screens/marketing/marketing_content_screen.dart';
@@ -1040,6 +1041,12 @@ class AppRouter {
         path: '/guide_master',
         name: 'guide_master',
         builder: (context, state) => const GuideMasterScreen(),
+      ),
+      // NEW PREMIUM HR GUIDE
+      GoRoute(
+        path: '/hr/master_guide',
+        name: 'hr_master_guide',
+        builder: (context, state) => const HrMasterGuideScreen(),
       ),
       GoRoute(
         path: '/pendientes',
