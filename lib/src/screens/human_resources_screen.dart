@@ -149,14 +149,14 @@ class _HumanResourcesScreenState extends State<HumanResourcesScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      ModuleGuides.hr.themeColor.withOpacity(0.15),
-                      ModuleGuides.hr.themeColor.withOpacity(0.05),
+                      const Color(0xFF2196F3).withOpacity(0.2), // Blue
+                      const Color(0xFF2196F3).withOpacity(0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: ModuleGuides.hr.themeColor.withOpacity(0.5)),
+                  border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.5)),
                 ),
                 child: Row(
                   children: [
@@ -166,7 +166,7 @@ class _HumanResourcesScreenState extends State<HumanResourcesScreen> {
                         color: Colors.black26,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(ModuleGuides.hr.icon, color: ModuleGuides.hr.themeColor, size: 24),
+                      child: Icon(ModuleGuides.hr.icon, color: const Color(0xFF2196F3), size: 24),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -188,7 +188,7 @@ class _HumanResourcesScreenState extends State<HumanResourcesScreen> {
                         ],
                       ),
                     ),
-                    Icon(Icons.arrow_forward_ios, color: ModuleGuides.hr.themeColor, size: 14),
+                    Icon(Icons.arrow_forward_ios, color: const Color(0xFF2196F3), size: 14),
                   ],
                 ),
               ),
