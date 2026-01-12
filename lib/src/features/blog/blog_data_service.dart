@@ -42,21 +42,65 @@ class BlogDataService {
 
   // Merges seed articles if they are missing (prevents duplicates by ID)
   void _ensureSeedData() {
+    print('BLOG: seedArticles=${initialBlogArticles.length}, currentLoaded=${_articles.length}');
+    
+    // 1. Sanitize current articles (remove empty/invalid)
+    _articles.removeWhere((a) => (a.title.trim().isEmpty) || (a.content.trim().isEmpty && a.contentRaw.trim().isEmpty));
+
     bool changed = false;
     for (var seed in initialBlogArticles) {
-      if (!_articles.any((a) => a.id == seed.id)) {
+      // Check if ID exists
+      final existingIndex = _articles.indexWhere((a) => a.id == seed.id);
+      
+      if (existingIndex == -1) {
+        // New article from seed (e.g. imported)
+        print('BLOG: Adding new seed article: ${seed.id}');
         _articles.add(seed);
         changed = true;
+      } else {
+        // OPTIONAL: Update existing if seed is "newer" or we want to force update?
+        // For now, we trust local edits over seed, UNLESS it was a "ghost" (empty content)
+        final existing = _articles[existingIndex];
+        if (existing.content.isEmpty && seed.content.isNotEmpty) {
+           print('BLOG: Fixing empty content for ${seed.id}');
+           _articles[existingIndex] = seed;
+           changed = true;
+        }
       }
     }
+    
     // Also remove old mock data if present (optional cleanup)
     _articles.removeWhere((a) => ['1', '2', '3'].contains(a.id)); 
     
+    // Deduplicate by ID just in case
+    final ids = <String>{};
+    _articles.retainWhere((a) {
+      if (ids.contains(a.id)) return false;
+      ids.add(a.id);
+      return true;
+    });
+
     if (changed) {
        // Sort by date descending
        _articles.sort((a,b) => b.date.compareTo(a.date));
        _saveToPrefs();
     }
+    
+    // Diagnostic check for images
+    for (final a in _articles) {
+       if (!_isValidUrl(a.imageUrl)) {
+          print('BLOG: invalid imageUrl for slug=${a.id} value="${a.imageUrl}" -> using placeholder');
+       }
+    }
+    
+    print('BLOG: Total Articles after merge & filter: ${_articles.length}');
+  }
+
+  bool _isValidUrl(String? s) {
+    if (s == null) return false;
+    final v = s.trim();
+    if (v.isEmpty) return false;
+    return v.startsWith("http://") || v.startsWith("https://");
   }
 
   Future<void> _saveToPrefs() async {
@@ -66,7 +110,8 @@ class BlogDataService {
 
   // -- GETTERS --
   List<BlogArticle> getAllArticles() {
-    return List.from(_articles); // Return copy
+    // Return copy, filtered by content validity
+    return _articles.where((a) => (a.title.isNotEmpty) && (a.content.isNotEmpty || a.contentRaw.isNotEmpty)).toList();
   }
 
   List<BlogArticle> getPublishedArticles() {
@@ -232,6 +277,7 @@ class BlogDataService {
 
   // -- MOCK DATA --
   void _initMockData() {
-    _articles.addAll(initialBlogArticles);
+    // We defer to _ensureSeedData to populate from initialBlogArticles safely
+    _articles.clear();
   }
 }

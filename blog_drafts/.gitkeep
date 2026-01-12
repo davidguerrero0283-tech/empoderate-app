@@ -1,0 +1,6 @@
+# This directory contains AI-generated blog drafts
+# Review and edit before publishing
+
+# Files in this directory:
+# - *.md          - Individual article files with frontmatter
+# - _index.json   - Metadata index of all generated articles
