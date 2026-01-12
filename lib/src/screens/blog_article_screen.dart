@@ -9,7 +9,9 @@ import '../features/analytics/analytics_service.dart';
 import '../components/neon_widgets.dart';
 
 class BlogArticleScreen extends StatefulWidget {
-  const BlogArticleScreen({Key? key}) : super(key: key);
+  final BlogArticle article;
+  
+  const BlogArticleScreen({Key? key, required this.article}) : super(key: key);
 
   @override
   State<BlogArticleScreen> createState() => _BlogArticleScreenState();
@@ -20,48 +22,43 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
   final TextEditingController _commentController = TextEditingController();
   final BlogDataService _blogService = BlogDataService();
   late BlogArticle _article;
-  bool _initialized = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initialized) {
-      _article = ModalRoute.of(context)!.settings.arguments as BlogArticle;
-      
-      // Track read event - leveraging that build is called on navigation
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-         AnalyticsService().trackAction('leer_articulo_blog', extra: {'articleTitle': _article.title});
-         
-         // Increment View count
-         final updated = BlogArticle(
-           id: _article.id,
-           title: _article.title,
-           subtitle: _article.subtitle,
-           description: _article.description,
-           category: _article.category,
-           date: _article.date,
-           imageUrl: _article.imageUrl,
-           content: _article.content,
-           keywords: _article.keywords,
-           relatedIds: _article.relatedIds,
-           status: _article.status,
-           isFeatured: _article.isFeatured,
-           metaTitle: _article.metaTitle,
-           metaDescription: _article.metaDescription,
-           contentRaw: _article.contentRaw,
-           tags: _article.tags,
-           views: _article.views + 1,
-           likes: _article.likes,
-           allowComments: _article.allowComments,
-           comments: _article.comments,
-           scheduledDate: _article.scheduledDate,
-           publishedAt: _article.publishedAt,
-         );
-         _blogService.updateArticle(updated);
-         // Don't setState here to avoid loop, just fire and forget or update local ref
-      });
-      _initialized = true;
-    }
+  void initState() {
+    super.initState();
+    _article = widget.article;
+    
+    // Track read event
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       AnalyticsService().trackAction('leer_articulo_blog', extra: {'articleTitle': _article.title});
+       
+       // Increment View count
+       final updated = BlogArticle(
+         id: _article.id,
+         title: _article.title,
+         subtitle: _article.subtitle,
+         description: _article.description,
+         category: _article.category,
+         date: _article.date,
+         imageUrl: _article.imageUrl,
+         content: _article.content,
+         keywords: _article.keywords,
+         relatedIds: _article.relatedIds,
+         status: _article.status,
+         isFeatured: _article.isFeatured,
+         metaTitle: _article.metaTitle,
+         metaDescription: _article.metaDescription,
+         contentRaw: _article.contentRaw,
+         tags: _article.tags,
+         views: _article.views + 1,
+         likes: _article.likes,
+         allowComments: _article.allowComments,
+         comments: _article.comments,
+         scheduledDate: _article.scheduledDate,
+         publishedAt: _article.publishedAt,
+       );
+       _blogService.updateArticle(updated);
+    });
   }
 
   void _addComment() {
@@ -117,8 +114,6 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_initialized) return const SizedBox.shrink(); // Wait for didChangeDependencies
-
     return PremiumScaffold(
       title: 'Artículo',
       showBackButton: true,

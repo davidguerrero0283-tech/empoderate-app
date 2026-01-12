@@ -111,6 +111,8 @@ import '../features/boveda/screens/boveda_screen.dart';
 // Blog
 import '../screens/blog_main_screen.dart';
 import '../screens/blog_article_screen.dart';
+import '../models/blog_article.dart';
+import '../features/blog/blog_data_service.dart';
 
 // SBot
 import '../sbot/sbot_home_screen.dart';
@@ -895,7 +897,25 @@ class AppRouter {
       GoRoute(
         path: '/blog_article',
         name: 'blog_article',
-        builder: (context, state) => const BlogArticleScreen(),
+        builder: (context, state) {
+          // 1) Try to get full BlogArticle from extra (normal in-app navigation)
+          final extra = state.extra;
+          if (extra is BlogArticle) {
+            return BlogArticleScreen(article: extra);
+          }
+          
+          // 2) Fallback: get article ID from query param (for web refresh)
+          final articleId = state.uri.queryParameters['id'];
+          if (articleId != null && articleId.isNotEmpty) {
+            final article = BlogDataService.instance.getArticleById(articleId);
+            if (article != null) {
+              return BlogArticleScreen(article: article);
+            }
+          }
+          
+          // 3) No article found - show error
+          return const _BlogArticleMissingScreen();
+        },
       ),
 
       // ========== SBOT ==========
@@ -1348,3 +1368,45 @@ class _MainShellGoRouterState extends State<MainShellGoRouter> {
     );
   }
 }
+
+/// Fallback screen when blog article is missing
+class _BlogArticleMissingScreen extends StatelessWidget {
+  const _BlogArticleMissingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Artículo no disponible'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.article_outlined, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'No se encontró el artículo',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Regresa al listado e intenta abrirlo nuevamente.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

@@ -24,6 +24,7 @@ import '../screens/recordatorios_screen.dart';
 import '../screens/progreso_metas_screen.dart';
 import '../screens/blog_main_screen.dart';
 import '../screens/blog_article_screen.dart';
+import '../models/blog_article.dart';
 import '../screens/legal_screen.dart';
 import '../sbot/sbot_home_screen.dart';
 import '../sbot/sbot_question_screen.dart';
@@ -359,7 +360,14 @@ class AppRoutes {
     recordatorios: (_) => const RecordatoriosScreen(),
     progresoMetas: (_) => const ProgresoMetasScreen(),
     blog: _guardedRoute('home.blog', (_) => const BlogMainScreen()),
-    blogArticle: _guardedRoute('home.blog', (_) => const BlogArticleScreen()),
+    blogArticle: _guardedRoute('home.blog', (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is BlogArticle) {
+        return BlogArticleScreen(article: args);
+      }
+      // Fallback: navigate back if no article provided
+      return const BlogMainScreen();
+    }),
     legal: (_) => const LegalScreen(),
     auditoria: _guardedRoute('tools.audit', (_) => const AuditoriaNegocioScreen()),
     checklist: (context) {

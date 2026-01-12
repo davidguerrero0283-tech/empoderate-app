@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../models/blog_article.dart';
 import '../components/safe_async_screen.dart';
 import '../components/neon_widgets.dart';
-import '../navigation/app_routes.dart';
 import '../features/blog/blog_data_service.dart';
 import '../features/blog/components/blog_card.dart';
 
@@ -117,7 +117,7 @@ class _BlogMainScreenState extends State<BlogMainScreen> {
                       return BlogCard(
                         article: article,
                         isFeatured: true,
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.blogArticle, arguments: article),
+                        onTap: () => context.push('/blog_article?id=${Uri.encodeComponent(article.id)}', extra: article),
                       );
                     },
                   ),
@@ -153,7 +153,7 @@ class _BlogMainScreenState extends State<BlogMainScreen> {
                     return BlogCard(
                       article: article,
                       isFeatured: false,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.blogArticle, arguments: article),
+                      onTap: () => context.push('/blog_article?id=${Uri.encodeComponent(article.id)}', extra: article),
                     );
                   },
                 ),
