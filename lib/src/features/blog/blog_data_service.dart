@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/blog_article.dart';
-import 'initial_articles.dart'; 
+import 'data/initial_articles.dart'; 
 
 class BlogDataService {
   // Singleton pattern
@@ -41,59 +41,54 @@ class BlogDataService {
   }
 
   // Merges seed articles if they are missing (prevents duplicates by ID)
+  // UPDATED: PROMPT 138 - Reset total, disable legacy merges.
   void _ensureSeedData() {
-    print('BLOG: seedArticles=${initialBlogArticles.length}, currentLoaded=${_articles.length}');
+    print('BLOG RESET: legacy articles disabled');
     
     // 1. Sanitize current articles (remove empty/invalid)
     _articles.removeWhere((a) => (a.title.trim().isEmpty) || (a.content.trim().isEmpty && a.contentRaw.trim().isEmpty));
 
     bool changed = false;
-    for (var seed in initialBlogArticles) {
-      // Check if ID exists
+    
+    // Strict compliance: Only load what is in initialArticles (which is now empty or populated by import)
+    // We check if we need to add anything new from the "feed" (initialArticles)
+    for (var seed in initialArticles) {
       final existingIndex = _articles.indexWhere((a) => a.id == seed.id);
       
       if (existingIndex == -1) {
-        // New article from seed (e.g. imported)
-        print('BLOG: Adding new seed article: ${seed.id}');
+        print('BLOG: Adding new generated/imported article: ${seed.id}');
         _articles.add(seed);
         changed = true;
       } else {
-        // OPTIONAL: Update existing if seed is "newer" or we want to force update?
-        // For now, we trust local edits over seed, UNLESS it was a "ghost" (empty content)
+        // Update allowed if content changed
         final existing = _articles[existingIndex];
         if (existing.content.isEmpty && seed.content.isNotEmpty) {
-           print('BLOG: Fixing empty content for ${seed.id}');
            _articles[existingIndex] = seed;
            changed = true;
         }
       }
     }
     
-    // Also remove old mock data if present (optional cleanup)
-    _articles.removeWhere((a) => ['1', '2', '3'].contains(a.id)); 
-    
-    // Deduplicate by ID just in case
-    final ids = <String>{};
-    _articles.retainWhere((a) {
-      if (ids.contains(a.id)) return false;
-      ids.add(a.id);
-      return true;
+    // CLEANUP: Remove any article that starts with 'seed-' unless it's in the current initial list
+    // This ensures old hardcoded seeds that were persisted in SharedPreferences are nuked.
+    _articles.removeWhere((a) {
+        if (!a.id.startsWith('seed-')) return false; // Keep user generated or non-seed items
+        // If it's a seed item, only keep it if it is present in the current approved list
+        bool isInCurrentList = initialArticles.any((ia) => ia.id == a.id);
+        if (!isInCurrentList) {
+           print('BLOG RESET: Removing legacy seed item: ${a.id}');
+           changed = true;
+           return true; 
+        }
+        return false;
     });
 
     if (changed) {
-       // Sort by date descending
        _articles.sort((a,b) => b.date.compareTo(a.date));
        _saveToPrefs();
     }
     
-    // Diagnostic check for images
-    for (final a in _articles) {
-       if (!_isValidUrl(a.imageUrl)) {
-          print('BLOG: invalid imageUrl for slug=${a.id} value="${a.imageUrl}" -> using placeholder');
-       }
-    }
-    
-    print('BLOG: Total Articles after merge & filter: ${_articles.length}');
+    print('BLOG: loaded articles from generated source only: ${_articles.length}');
   }
 
   bool _isValidUrl(String? s) {

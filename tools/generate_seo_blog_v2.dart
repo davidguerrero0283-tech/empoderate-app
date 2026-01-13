@@ -1,8 +1,9 @@
+```
 // SEO Blog Generator V2 - Reads from initial_articles.dart
 // Run with: dart run tools/generate_seo_blog_v2.dart
 
 import 'dart:io';
-import '../lib/src/features/blog/initial_articles.dart';
+  final file = File('lib/src/features/blog/data/initial_articles.dart');
 import '../lib/src/models/blog_article.dart';
 
 // Convert Markdown to HTML

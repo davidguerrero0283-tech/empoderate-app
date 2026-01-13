@@ -49,8 +49,14 @@ void main(List<String> args) async {
     exit(1);
   }
 
-  final index = (jsonDecode(indexFile.readAsStringSync()) as List)
-      .cast<Map<String, dynamic>>();
+  final rawJson = jsonDecode(indexFile.readAsStringSync());
+  List<Map<String, dynamic>> index;
+  
+  if (rawJson is List) {
+     index = rawJson.cast<Map<String, dynamic>>();
+  } else {
+     index = (rawJson['articles'] as List).cast<Map<String, dynamic>>();
+  }
 
   print('📋 Found ${index.length} draft(s) in index\n');
 
@@ -106,7 +112,7 @@ void main(List<String> args) async {
 
   print('📥 Found ${toImport.length} candidate(s) for import...\n');
 
-  final articlesFile = File('lib/src/features/blog/initial_articles.dart');
+  final articlesFile = File('lib/src/features/blog/data/initial_articles.dart');
   if (!articlesFile.existsSync()) {
     print('❌ initial_articles.dart not found at ${articlesFile.path}');
     exit(1);
@@ -176,7 +182,8 @@ void main(List<String> args) async {
       }
       
       // Always update index if we changed imported flags
-      indexFile.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(index));
+      final newJson = {'articles': index};
+      indexFile.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(newJson));
       print('📋 Updated index status (Imported: ${importedSlugs.length}, Skipped: $skippedCount).');
   } else {
     print('\n⚠️ No actions taken.');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/blog_article.dart';
+import '../widgets/blog_cover_art.dart';
 
 class BlogCard extends StatelessWidget {
   final BlogArticle article;
@@ -54,29 +55,30 @@ class BlogCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 1. Background Image or Placeholder
+              // 1. Background Image or Cover Art
               if (validUrl)
                 Image.network(
                   article.imageUrl.trim(),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     print('BLOG: Error loading image for ${article.title}: $error');
-                    return _buildPlaceholder();
+                    return _buildCoverArt(isList: false);
                   },
                 )
               else
-                _buildPlaceholder(),
+                _buildCoverArt(isList: false),
 
-              // 2. Gradient Overlay (Scrim)
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.black.withOpacity(0.1), Colors.black.withOpacity(0.8)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+              // 2. Gradient Overlay (Scrim) - Only if using image
+              if (validUrl)
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.black.withOpacity(0.1), Colors.black.withOpacity(0.8)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
                 ),
-              ),
 
               // 3. Content
               Padding(
@@ -100,14 +102,23 @@ class BlogCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       article.title,
-                      style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white, 
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold,
+                        shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       article.subtitle,
-                      style: GoogleFonts.outfit(color: Colors.white70, fontSize: 12),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70, 
+                        fontSize: 12,
+                        shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -154,10 +165,10 @@ class BlogCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                            print('BLOG: Error loading list image for ${article.title}: $error');
-                           return _buildPlaceholder(small: true);
+                           return _buildCoverArt(isList: true);
                         },
                       )
-                    : _buildPlaceholder(small: true),
+                    : _buildCoverArt(isList: true),
               ),
             ),
             // Content Section
@@ -212,22 +223,12 @@ class BlogCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder({bool small = false}) {
-    return Container(
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A), // Dark fallback
-        gradient: LinearGradient(
-            colors: [Color(0xFF1A237E), Color(0xFF000000)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-        ),
-      ),
-      child: Icon(
-        Icons.article_outlined,
-        color: Colors.white24,
-        size: small ? 32 : 48,
-      ),
+  Widget _buildCoverArt({required bool isList}) {
+    return BlogCoverArt(
+      slug: article.id,
+      category: article.category,
+      title: isList ? null : article.title, // Only show title on featured if desired, logic allows it
+      isListCard: isList,
     );
   }
 }

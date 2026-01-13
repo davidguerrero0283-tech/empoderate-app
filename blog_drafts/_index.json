@@ -1,50 +1,18 @@
-[
-  {
-    "slug": "estrategias-de-marketing-local-para-negocios-peque-1",
-    "title": "Estrategias de marketing local para negocios pequeños en Panamá",
-    "status": "published",
-    "usedFallback": false,
-    "topicId": "marketing local Panamá",
-    "imported": true
-  },
-  {
-    "slug": "como-registrar-tu-ruc-y-actualizar-tus-datos-ante--1",
-    "title": "Cómo registrar tu RUC y actualizar tus datos ante la DGI",
-    "status": "published",
-    "usedFallback": false,
-    "topicId": "registro RUC Panamá",
-    "imported": true
-  },
-  {
-    "slug": "como-abrir-un-negocio-formal-en-panama-paso-a-paso-1",
-    "title": "Cómo abrir un negocio formal en Panamá paso a paso",
-    "status": "published",
-    "usedFallback": false,
-    "topicId": "abrir negocio Panamá",
-    "imported": true
-  },
-  {
-    "slug": "como-registrar-tu-ruc-y-actualizar-tus-datos-ante--2",
-    "title": "Cómo registrar tu RUC y actualizar tus datos ante la DGI",
-    "status": "draft",
-    "usedFallback": true,
-    "topicId": "registro RUC Panamá",
-    "imported": false
-  },
-  {
-    "slug": "decimo-tercer-mes-calculo-correcto-fechas-y-buenas-1",
-    "title": "Décimo tercer mes: cálculo correcto, fechas y buenas prácticas",
-    "status": "draft",
-    "usedFallback": true,
-    "topicId": "décimo tercer mes Panamá",
-    "imported": false
-  },
-  {
-    "slug": "guia-del-itbms-para-emprendedores-cuando-aplica-y--1",
-    "title": "Guía del ITBMS para emprendedores: cuándo aplica y cómo declararlo",
-    "status": "draft",
-    "usedFallback": true,
-    "topicId": "ITBMS Panamá emprendedores",
-    "imported": false
-  }
-]
+{
+  "articles": [
+    {
+      "id": "test-render-001",
+      "slug": "test-render-001",
+      "title": "Unified Render Test",
+      "path": "test_render_001.md",
+      "tags": [
+        "Test",
+        "Render"
+      ],
+      "category": "Tech",
+      "imported": true,
+      "status": "published",
+      "date": "2024-01-01"
+    }
+  ]
+}

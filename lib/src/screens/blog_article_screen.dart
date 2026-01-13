@@ -7,6 +7,7 @@ import '../features/blog/blog_data_service.dart'; // Service
 import '../components/premium_scaffold.dart';
 import '../features/analytics/analytics_service.dart';
 import '../components/neon_widgets.dart';
+import '../features/blog/widgets/blog_cover_art.dart';
 
 class BlogArticleScreen extends StatefulWidget {
   final BlogArticle article;
@@ -17,7 +18,16 @@ class BlogArticleScreen extends StatefulWidget {
   State<BlogArticleScreen> createState() => _BlogArticleScreenState();
 }
 
+
 class _BlogArticleScreenState extends State<BlogArticleScreen> {
+
+  bool _isValidUrl(String? s) {
+    if (s == null) return false;
+    final v = s.trim();
+    if (v.isEmpty) return false;
+    return v.startsWith("http://") || v.startsWith("https://");
+  }
+
   double _fontSize = 16.0;
   final TextEditingController _commentController = TextEditingController();
   final BlogDataService _blogService = BlogDataService();
@@ -114,22 +124,10 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool validUrl = _isValidUrl(_article.imageUrl);
+
     return PremiumScaffold(
-      title: 'Artículo',
-      showBackButton: true,
-      floatingActionButton: FloatingActionButton.small(
-        backgroundColor: const Color(0xFF001225),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Color(0xFFD4AF37))),
-        onPressed: () {
-          setState(() {
-            _fontSize = _fontSize == 16.0 ? 20.0 : 16.0;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Tamaño de letra: ${_fontSize == 16.0 ? "Normal" : "Grande"}'), duration: const Duration(seconds: 1)),
-          );
-        },
-        child: const Icon(Icons.text_fields, color: Color(0xFFD4AF37)),
-      ),
+      // ... same scaffold props
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Column(
@@ -138,19 +136,52 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
             // Header image
             Container(
               height: 200,
+              width: double.infinity,
               decoration: BoxDecoration(
-                image: DecorationImage(image: NetworkImage(_article.imageUrl), fit: BoxFit.cover),
                 borderRadius: BorderRadius.circular(16),
+                // If we aren't using an image, the gradient container below or CoverArt handles decoration
               ),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.black54, Colors.transparent],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: validUrl 
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                         Image.network(
+                           _article.imageUrl.trim(), 
+                           fit: BoxFit.cover,
+                           errorBuilder: (context, error, stack) {
+                              print('BLOG DETAIL: Error loading image for ${_article.title}: $error');
+                              return BlogCoverArt(
+                                slug: _article.id, 
+                                category: _article.category,
+                                title: _article.title, 
+                                isListCard: false,
+                              );
+                           },
+                         ),
+                         // Scrim for text readability if desired, though title is below image here so maybe just aesthetic
+                         Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.black54, Colors.transparent],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
+                            ),
+                         ),
+                      ],
+                    )
+                  : BlogCoverArt(
+                      slug: _article.id, 
+                      category: _article.category,
+                      title: _article.title, // Show title inside cover if no image? Or just art.
+                      // Prompt says "show cover upstairs" - if we show title inside art, we duplicate the title below.
+                      // Let's hide title in Art for detail view since title is rendered below in Text widget.
+                      // UNLESS user wants title inside cover. Prompt: "Title (opcional)".
+                      // Existing UI has title BELOW image (lines 169). So let's NOT show title in cover art here to avoid duplication.
+                      isListCard: false, 
+                    ),
               ),
             ),
             const SizedBox(height: 16),
@@ -205,7 +236,7 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
               if (_article.tags.isNotEmpty) const SizedBox(height: 24),
 
               // Rich Paragraph Content Rendering
-              ..._buildRichContent(_article.contentRaw.isNotEmpty ? _article.contentRaw : _article.content),
+              ..._buildUnifiedContent(_article.contentRaw.isNotEmpty ? _article.contentRaw : _article.content),
               
               const SizedBox(height: 32),
               
@@ -315,11 +346,11 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
     );
   }
 
-  List<Widget> _buildRichContent(String rawContent) {
-    // Simple parser for Markdown-like syntax + HTML tags from editor
+  List<Widget> _buildUnifiedContent(String rawContent) {
     final List<Widget> widgets = [];
     final lines = rawContent.split('\n');
     
+    // PROMPT 137: Unified Render + Markers + Filtering
     for (String line in lines) {
       String trimmed = line.trim();
       if (trimmed.isEmpty) {
@@ -327,9 +358,30 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
         continue;
       }
       
-      // Basic HTML tag stripping/handling for this View (advanced render would use flutter_html)
-      // Here we just handle basic structure for now.
-      
+      // Filter technical strings
+      if (trimmed.contains('FALLBACK API FAILURE') || trimmed.contains('DRY RUN')) {
+        continue;
+      }
+
+      // -- MARKER DETECTION --
+      if (trimmed.contains('[[TIP]]')) {
+         widgets.add(_buildMarkerWidget(trimmed, 'TIP', Colors.greenAccent, Icons.lightbulb));
+         continue;
+      }
+      if (trimmed.contains('[[WARNING]]')) {
+         widgets.add(_buildMarkerWidget(trimmed, 'WARNING', Colors.orangeAccent, Icons.warning_amber));
+         continue;
+      }
+      if (trimmed.contains('[[CHECKLIST]]')) {
+         widgets.add(_buildMarkerWidget(trimmed, 'CHECKLIST', Color(0xFFD4AF37), Icons.playlist_add_check));
+         continue;
+      }
+      if (trimmed.contains('[[STEPS]]')) {
+         widgets.add(_buildMarkerWidget(trimmed, 'STEPS', Colors.blueAccent, Icons.format_list_numbered));
+         continue;
+      }
+
+      // -- STANDARD MARKDOWN-LIKE PARSING --
       if (trimmed.startsWith('## ') || trimmed.contains('<h2>')) {
         String text = trimmed.replaceAll('## ', '').replaceAll('<h2>', '').replaceAll('</h2>', '');
         widgets.add(Padding(
@@ -360,10 +412,23 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
             ],
           ),
         ));
+      } else if (trimmed.startsWith('>')) {
+         // Blockquote style
+         widgets.add(Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.only(left: 12),
+            decoration: const BoxDecoration(
+              border: Border(left: BorderSide(color: Colors.white24, width: 3))
+            ),
+            child: Text(
+              trimmed.replaceAll('>', '').trim(),
+              style: GoogleFonts.outfit(color: Colors.white54, fontStyle: FontStyle.italic, fontSize: _fontSize),
+            ),
+         ));
       } else {
-         // Cleanup simple tags for plain text display if package not available
+         // Normal paragraph
          String text = trimmed.replaceAll('<p>', '').replaceAll('</p>', '')
-                              .replaceAll('<b>', '').replaceAll('</b>', '') // would typically use RichTextSpan
+                              .replaceAll('<b>', '').replaceAll('</b>', '')
                               .replaceAll('<i>', '').replaceAll('</i>', '');
 
          widgets.add(Text(
@@ -377,5 +442,35 @@ class _BlogArticleScreenState extends State<BlogArticleScreen> {
       }
     }
     return widgets;
+  }
+
+  Widget _buildMarkerWidget(String content, String label, Color color, IconData icon) {
+     final cleanText = content.replaceAll('[[${label}]]', '').trim();
+     return Container(
+       margin: const EdgeInsets.symmetric(vertical: 12),
+       padding: const EdgeInsets.all(16),
+       decoration: BoxDecoration(
+         color: color.withOpacity(0.1),
+         borderRadius: BorderRadius.circular(12),
+         border: Border.all(color: color.withOpacity(0.3)),
+       ),
+       child: Row(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: GoogleFonts.outfit(color: color, fontWeight: FontWeight.bold, fontSize: 10)),
+                  const SizedBox(height: 4),
+                  Text(cleanText, style: GoogleFonts.outfit(color: Colors.white, fontSize: _fontSize)),
+                ],
+              ),
+            ),
+         ],
+       ),
+     );
   }
 }

@@ -43,7 +43,7 @@ class ArticleData {
 
 // Parse initial_articles.dart file
 Future<List<ArticleData>> parseArticlesFile() async {
-  final file = File('lib/src/features/blog/initial_articles.dart');
+  final file = File('lib/src/features/blog/data/initial_articles.dart');
   final content = await file.readAsString();
   
   final articles = <ArticleData>[];
